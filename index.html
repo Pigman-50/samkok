@@ -4767,12 +4767,12 @@ function renderGame() {
   $("world").textContent = getWorldBanner(s.year);
 
   $("gTabs").innerHTML = [["map", "แผ่นดิน"], ["char", "ตัวละคร"], ["log", "พงศาวดาร"]].map(([k, l]) => `<button class="${gTab === k ? "on" : ""}" data-t="${k}">${l}</button>`).join("");
-  $("gTabs").querySelectorAll("button").forEach(b => b.onclick = () => { gTab = b.dataset.t; Sound.tap(); renderGame(); });
+  $("gTabs").querySelectorAll("button").forEach(b => b.onclick = () => { gTab = b.dataset.t; Sound.tap(); renderGame(); requestAnimationFrame(() => $("gTabs").scrollIntoView({ behavior: "smooth", block: "start" })); });
   ["map", "char", "log"].forEach(k => $("p_" + k).classList.toggle("hidden", gTab !== k));
 
   // เหตุการณ์ที่รอตัดสินใจ: แสดงบนสุดเสมอ
   const box = $("stage");
-  if (s.pending) { gTab = "map"; ["map", "char", "log"].forEach(k => $("p_" + k).classList.toggle("hidden", k !== "map")); renderEventCard(box); }
+  if (s.pending) renderEventCard(box);
   else {
     box.innerHTML = orderMsg() + `<div class="calm card"><div class="ev-badge"><span>${s.adult ? "ช่วงเวลาสงบ" : "วัยเยาว์"}</span><span>${esc(CITY[s.loc].name)}</span></div>
       <p class="ev-body">ช่วงนี้ไม่มีเรื่องใหญ่ให้ตัดสินใจ ชีวิตดำเนินไปตามปกติ</p><button class="btn primary block" id="bNext">ใช้ชีวิตต่อ</button></div>`;
