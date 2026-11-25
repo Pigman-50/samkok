@@ -2920,6 +2920,57 @@ const GEAR_CARDS = [
 ];
 POOL_EVENTS.push(...GEAR_CARDS);
 
+/* ---------- ขุมทรัพย์: ถ้ำลับ บ้านร้าง สุสานโบราณ ซากเรือ ---------- */
+function treasure(s, rare) {
+  const own = r => hasRelic(s, r.id);
+  const shop = RELICS.filter(r => !own(r) && r.shop), legend = RELICS.filter(r => !own(r) && !r.shop && !r.event);
+  const pool = rare && legend.length && R() < 0.55 ? legend : shop.length ? shop : legend;
+  return pool.length ? rpick(pool) : null;
+}
+const lootTxt = (s, rare, base) => { const it = treasure(s, rare); if (!it) { s.gold += 40; return base + " ในนั้นมีแต่ทองเก่า 40 ตำลึง"; } equipRelic(s, it.id); return `${base} พบ ${relicIco(it)}${it.name} — ${it.desc}`; };
+const HUNT_CARDS = [
+  { id: "x_cave", repeat: 4, weight: 1.1, req: s => s.adult,
+    badge: "ขุมทรัพย์ · ถ้ำลับ", title: "ถ้ำหลังม่านน้ำตก",
+    body: s => `พรานป่าแถบ${cn(s.loc)}เล่าว่าหลังน้ำตกมีถ้ำที่ไม่มีใครกล้าเข้า เสียงลมในถ้ำเหมือนคนร้องไห้ ว่ากันว่ายอดฝีมือรุ่นก่อนเคยซ่อนของไว้`,
+    npc: s => person(s, "hunter@" + s.year, { g: "M", age: 48, role: "พรานป่าผู้นำทาง", desc: "รู้จักป่าทุกต้นไม้ แต่ไม่ยอมเข้าถ้ำนั้นแม้จะได้เงินมากแค่ไหน", tags: ["ผู้นำทาง"] }),
+    choices: [
+      { t: "ลุยเข้าไปคนเดียวพร้อมคบเพลิง", h: "วัดวรยุทธ์+สุขภาพ เจออาวุธหรือตำรา", chk: { st: ["martial", "health"], dc: 110 }, ok: { fn: s => lootTxt(s, true, "ลึกสุดถ้ำมีโครงกระดูกนั่งขัดสมาธิ ข้างกายมีหีบไม้แกะสลัก"), fame: 2 }, fail: { txt: "พื้นถ้ำถล่ม คุณตกลงไปในโพรงลึก กว่าจะปีนออกมาได้ก็บาดเจ็บหนัก", st: { health: -14 }, deadly: 0.04 } },
+      { t: "พาคนไปช่วยกันสำรวจอย่างระวัง", h: "ปลอดภัยกว่า เจอของธรรมดา", need: s => s.troops >= 50 || (s.lieut || []).some(l => l.alive), chk: { st: ["strategy"], dc: 45 }, ok: { fn: s => lootTxt(s, false, "ทีมของคุณพบช่องลับใต้หินงอก") }, fail: { txt: "เดินวนอยู่ในถ้ำทั้งวันไม่เจออะไร มีแต่ค้างคาวบินพรู" } },
+      { t: "ไม่เข้า เชื่อคำเตือนพราน", h: "", ok: { txt: "คุณยืนฟังเสียงลมจากปากถ้ำอยู่ครู่หนึ่งแล้วเดินกลับ" } }
+    ] },
+  { id: "x_ruin", repeat: 4, weight: 1.1, req: s => s.adult,
+    badge: "ขุมทรัพย์ · บ้านร้าง", title: "คฤหาสน์ร้างตระกูลขุนนางเก่า",
+    body: s => `นอกกำแพง${cn(s.loc)}มีคฤหาสน์ที่ถูกทิ้งร้างตั้งแต่ตระกูลเจ้าของถูกประหารยกตระกูล ชาวบ้านลือว่ากลางคืนมีแสงไฟวูบวาบในห้องหนังสือ`,
+    choices: [
+      { t: "เข้าไปค้นห้องหนังสือตอนกลางคืน", h: "ดวง เจอตำราหรืออาวุธหายาก", chk: { luck: 55 }, ok: { fn: s => lootTxt(s, true, "หลังชั้นหนังสือมีประตูลับ ข้างในเป็นห้องเก็บของบรรพบุรุษ"), fame: 1 }, fail: { txt: "แสงไฟนั้นคือโจรที่ใช้บ้านเป็นที่ซ่อน คุณต้องสู้ฝ่าออกมา", st: { health: -8 }, deadly: 0.03 } },
+      { t: "ค้นตอนกลางวันอย่างละเอียด", h: "วัดกลยุทธ์ เจอของธรรมดาหรือเงิน", chk: { st: ["strategy", "politics"], dc: 95 }, ok: { fn: s => lootTxt(s, false, "ใต้แผ่นอิฐในห้องโถงมีหีบเหล็กฝังไว้") }, fail: { fn: s => { s.gold += 10; return "คนอื่นค้นไปหมดแล้ว เหลือแค่เหรียญทองแดงไม่กี่เหรียญ"; } } },
+      { t: "จุดธูปไหว้ดวงวิญญาณแล้วจากไป", h: "บารมี", ok: { txt: "คืนนั้นคุณฝันเห็นชายชราในชุดขุนนางโค้งคำนับขอบคุณ", st: { charisma: 2 } } }
+    ] },
+  { id: "x_tomb", repeat: 6, req: s => s.adult && (s.troops >= 200 || s.stats.martial >= 60),
+    badge: "ขุมทรัพย์ · สุสานโบราณ", title: "สุสานแม่ทัพสมัยราชวงศ์ฉิน",
+    body: "น้ำป่าพัดดินภูเขาถล่มจนเห็นประตูหินของสุสานโบราณ จารึกหน้าประตูเตือนว่าผู้รบกวนการหลับของแม่ทัพจะต้องคำสาป",
+    choices: [
+      { t: "เปิดสุสาน", h: "วัดกลยุทธ์ (หลบกับดัก) โอกาสได้ของล้ำค่า", chk: { st: ["strategy"], dc: 62 }, ok: { fn: s => lootTxt(s, true, "ผ่านกับดักลูกศรสามชั้นถึงห้องโลงศพ แม่ทัพโบราณยังกำอาวุธไว้ในมือ"), fame: -2 }, fail: { txt: "กับดักลูกศรพุ่งออกจากผนัง คุณรอดมาได้พร้อมแผลเต็มตัว คนทั้งเมืองลือว่าคุณต้องคำสาป", st: { health: -12 }, fame: -4, deadly: 0.05 } },
+      { t: "ปิดสุสานคืนแล้วตั้งศาลบูชา", h: "ชื่อเสียง +", ok: { txt: "ชาวบ้านยกย่องที่คุณเคารพผู้ล่วงลับ", fame: 4 } }
+    ] },
+  { id: "x_wreck", repeat: 5, req: s => s.adult && ["south", "central"].includes(region(s)),
+    badge: "ขุมทรัพย์ · ซากเรือ", title: "ซากเรือสินค้าโผล่กลางแม่น้ำหน้าแล้ง",
+    body: "น้ำในแม่น้ำลดลงจนเห็นซากเรือสินค้าลำใหญ่ที่จมมาหลายสิบปี ชาวประมงบอกว่าเป็นเรือขนบรรณาการไปเมืองหลวง",
+    choices: [
+      { t: "ดำน้ำลงไปค้นเอง", h: "วัดสุขภาพ", chk: { st: ["health"], dc: 50 }, ok: { fn: s => lootTxt(s, false, "ในห้องท้ายเรือมีหีบที่ยังปิดผนึกแน่นหนา") }, fail: { txt: "กระแสน้ำใต้ซากเรือดูดคุณลงไป เกือบไม่ได้ขึ้นมาหายใจ", st: { health: -10 }, deadly: 0.03 } },
+      { t: "จ้างชาวประมงช่วยงม (15 ตำลึง)", h: "ปลอดภัย ได้เงินคืนมากกว่า", need: s => s.gold >= 15, ok: { fn: s => { s.gold += 25 + rint(40); return R() < 0.4 ? lootTxt(s, false, "ชาวประมงงมได้ทั้งเงินและหีบเก่าใบหนึ่ง") : "ชาวประมงงมได้เหรียญเงินกองโต"; } } }
+    ] }
+];
+POOL_EVENTS.push(...HUNT_CARDS);
+CHILD_EVENTS.push({ id: "c_k_cave", minAge: 8, maxAge: 15,
+  badge: "วัยเยาว์ · ถ้ำลับ", title: "ถ้ำที่ผู้ใหญ่ห้ามเข้า",
+  body: s => `${s.friend}ท้าให้คุณเข้าไปในถ้ำหลังเขาที่ผู้ใหญ่ห้ามเด็กเข้าเด็ดขาด ปากถ้ำมืดสนิทและมีลมเย็นพัดออกมา`,
+  npc: s => P_FRIEND(s),
+  choices: [
+    { t: "เข้าไปด้วยกัน", h: "ดวง อาจเจอของในตำนาน", chk: { luck: 45 }, ok: { fn: s => { const it = RELICS.filter(r => r.type === "tome" && !hasRelic(s, r.id) && !r.event); if (!it.length) return "ในถ้ำมีแต่ภาพวาดบนผนัง"; const t = rpick(it); equipRelic(s, t.id); return `ลึกเข้าไปมีหีบหินใส่ม้วนไม้ไผ่ คุณแอบเก็บไว้ไม่บอกใคร ได้ 📜${t.name}`; }, st: { strategy: 1 } }, fail: { txt: "คบไฟดับกลางทาง ทั้งสองหลงอยู่ในถ้ำจนผู้ใหญ่ออกตามหา โดนตีก้นทั้งคู่", st: { health: -3 } } },
+    { t: "ไม่เข้า ไปฟ้องผู้ใหญ่", h: "", ok: { txt: "เพื่อนโกรธคุณไปสามวัน", st: { politics: 1 } } }
+  ] });
+
 /* ===================================================================
  * SYSTEMS — ชื่อเสียง, เกียรติยศตระกูล, ทรัพยากรแต่ละสาย, คำสั่งประจำช่วง
  * =================================================================== */
@@ -3455,6 +3506,7 @@ function lifeTurn(s) {
   });
   s.gold = Math.round(s.gold); s.food = Math.round(s.food);
   syncFaction(s);
+  autoAssign(s);
   return notes;
 }
 
@@ -3589,7 +3641,7 @@ const TACTICS = {
 };
 function battleSetup(s, cid) {
   const c = W.cities[cid];
-  const lieut = Math.min(3, (s.lieut || []).filter(l => l.alive && !l.gov).length);
+  const lieut = Math.min(3, (s.lieut || []).filter(l => l.alive && !l.gov && l.role !== "adv").length);
   const naval = CITY[cid].spec === "เรือ";
   const unitB = s.unit === "navy" ? (naval ? 1.25 : 0.95) : s.unit === "cav" ? (naval ? 0.85 : 1.12) : s.unit === "xbow" ? 1.05 : 1;
   const A = s.troops * (0.6 + s.stats.command / 125) * (0.6 + s.morale / 125) * (1 + lieut * 0.06) * unitB * (1 + arsenalPower(s));
@@ -4126,7 +4178,7 @@ function finish(s) {
   score += Math.round(Math.max(0, s.fame) / 5) + (s.peakTroops >= 50000 ? 6 : 0) + Math.min(10, s.peakLands * 2);
   if (endingId === 7) score += 30;
   score = Math.max(0, Math.round(score * DIFF[s.diff].score));
-  const gi = score >= 330 ? 4 : score >= 280 ? 3 : score >= 200 ? 2 : score >= 110 ? 1 : 0;
+  const gi = score >= 340 ? 4 : score >= 290 ? 3 : score >= 205 ? 2 : score >= 110 ? 1 : 0;
 
   let epithet = `“${portraitTitle(s)}แห่ง${s.city.split(" ")[0]}”`;
   if (s.talents.length === 0 && s.peakRank >= 5) epithet = "“สามัญชนผู้ท้าทายสวรรค์”";
@@ -4444,7 +4496,8 @@ function lieutPos(s, l) {
   if (l.gov && W.cities[l.gov] && W.cities[l.gov].owner === "player") return `เจ้าเมือง${cn(l.gov)}`;
   if (l.gov) l.gov = null;
   if (l.role === "adv") return "เสนาธิการ";
-  const field = s.lieut.filter(x => x.alive && !x.gov && x.role !== "adv");
+  const war = x => ((x.st || {}).martial || 45) + ((x.st || {}).command || 45);
+  const field = s.lieut.filter(x => x.alive && !x.gov && x.role !== "adv").sort((a, b) => war(b) - war(a));
   const i = field.indexOf(l);
   return i < 3 ? FIELD_POS[i] + " · ร่วมรบ" : FIELD_POS[Math.min(i, FIELD_POS.length - 1)] + " · กองหนุน";
 }
@@ -4456,31 +4509,31 @@ function lieutNpc(s, l) {
 function lieutsHTML(s) {
   const L = s.lieut || [];
   if (!L.length) return `<div class="relic empty"><span>ยังไม่มีขุนพลติดตาม ชวนยอดฝีมือพเนจร รับวีรบุรุษ หรือสาบานเป็นพี่น้อง จะได้รองแม่ทัพมาช่วยรบ</span><span></span></div>`;
-  return `<p class="muted" style="font-size:12.5px;margin:0 0 8px">ขุนพลที่ร่วมรบ (ไม่เกิน 3 คน) เพิ่มกำลังรบคนละ 6% · เสนาธิการช่วยตัวเลือกที่ใช้กลยุทธ์ · เจ้าเมืองทำให้เมืองสงบและทหารเพิ่มเร็วขึ้น · แตะเพื่อดูประวัติหรือแต่งตั้ง</p><div class="lts">` +
+  return `<p class="muted" style="font-size:12.5px;margin:0 0 8px">ขุนพลที่ร่วมรบ (ไม่เกิน 3 คน) เพิ่มกำลังรบคนละ 6% · เสนาธิการช่วยตัวเลือกที่ใช้กลยุทธ์ · เจ้าเมืองทำให้เมืองสงบและทหารเพิ่มเร็วขึ้น · ระบบแต่งตั้งให้อัตโนมัติตามความถนัด · แตะเพื่อดูประวัติ</p><div class="lts">` +
     L.map((l, i) => { const n = lieutNpc(s, l); return `<button class="lt ${l.alive ? "" : "dead"}" data-li="${i}">${pf(npcSpec(n))}<div><b>${esc(l.name)}</b><span class="pos">${esc(lieutPos(s, l))}</span><small>${esc(l.kind)}${l.st ? " · " + Object.entries(l.st).map(([k, v]) => STAT_META[k].name + " " + v).join(" · ") : ""}</small></div></button>`; }).join("") + `</div>`;
 }
 function bindLieuts() { document.querySelectorAll("#fLieut [data-li]").forEach(b => b.onclick = () => openLieut(+b.dataset.li)); }
-function openLieut(i) {
-  const s = S, l = s.lieut[i];
-  openPerson(lieutNpc(s, l));
-  if (!l.alive) return;
-  const own = citiesOf("player");
-  const opts = [];
-  if (l.gov || l.role === "adv") opts.push(["field", "กลับมาเป็นแม่ทัพร่วมรบ"]);
-  if (l.role !== "adv") opts.push(["adv", "ตั้งเป็นเสนาธิการ (กลยุทธ์ +)"]);
-  own.filter(c => c.id !== l.gov && !s.lieut.some(x => x.alive && x.gov === c.id)).slice(0, 6).forEach(c => opts.push(["gov:" + c.id, `ตั้งเป็นเจ้าเมือง${cn(c.id)}`]));
-  if (!opts.length) return;
-  const box = document.createElement("div");
-  box.innerHTML = `<div class="sec-h" style="margin-top:12px">แต่งตั้งตำแหน่ง</div><div class="appoint">${opts.map(([k, t]) => `<button class="btn" data-ap="${k}">${esc(t)}</button>`).join("")}</div>`;
-  $("pX").before(box);
-  box.querySelectorAll("[data-ap]").forEach(b => b.onclick = () => {
-    const k = b.dataset.ap;
-    if (s.lieut.some(x => x.role === "adv") && k === "adv") s.lieut.forEach(x => { if (x.role === "adv") x.role = null; });
-    l.gov = null; l.role = null;
-    if (k === "adv") { l.role = "adv"; }
-    else if (k.startsWith("gov:")) l.gov = k.slice(4);
-    Sound.tap(); toast(`${l.name} รับตำแหน่ง${lieutPos(s, l)}`); saveGame(s);
-    $("ov").classList.add("hidden"); renderGame();
+function openLieut(i) { openPerson(lieutNpc(S, S.lieut[i])); }
+/* แต่งตั้งอัตโนมัติตามความถนัด: บู๊ → แม่ทัพร่วมรบ, กลยุทธ์ → เสนาธิการ, ปกครอง → เจ้าเมือง */
+function autoAssign(s) {
+  const L = (s.lieut || []).filter(l => l.alive);
+  L.forEach(l => { if (l.hero && HERO_ST[l.hero]) l.st = HERO_ST[l.hero]; l.st = l.st || {}; l.role = null; l.gov = null; });
+  if (!L.length) return;
+  const v = (l, k) => l.st[k] || 45;
+  const war = l => v(l, "martial") + v(l, "command"), wit = l => v(l, "strategy") + v(l, "politics");
+  const pool = L.slice();
+  const take = (score, cond) => { pool.sort((a, b) => score(b) - score(a)); const k = pool.findIndex(cond || (() => true)); return k < 0 ? null : pool.splice(k, 1)[0]; };
+  // แม่ทัพร่วมรบอย่างน้อย 1 คนก่อนเสมอ
+  const field = [take(war)];
+  // เสนาธิการ: คนที่เก่งบุ๋นกว่าบู๊
+  if (pool.length) { const a = take(wit, l => wit(l) > war(l)); if (a) a.role = "adv"; }
+  // เจ้าเมือง: เมืองใหญ่ก่อน ใช้คนที่เก่งบุ๋นหรือบู๊น้อยกว่า
+  const cities = citiesOf("player").slice().sort((a, b) => b.pop - a.pop);
+  const fieldNeed = Math.min(3, L.length);
+  cities.forEach(c => {
+    if (pool.length <= Math.max(0, fieldNeed - field.length)) return;
+    const g = take(l => v(l, "politics") * 2 + v(l, "charisma") - war(l) / 2);
+    if (g) g.gov = c.id;
   });
 }
 /* เสนาธิการช่วยเพิ่มโอกาสในตัวเลือกที่ใช้กลยุทธ์ */
@@ -5182,6 +5235,7 @@ function renderGame() {
   $("fGear").innerHTML = armoryHTML(s) + `<div class="sec-h" style="margin-top:14px">พรสวรรค์ <small>${s.talents.length} อย่าง</small></div><div class="tal-list">${talentHTML(s)}</div>`;
   $("fGearN").textContent = `อาวุธ ${arsenalItems(s, "weapon").length} · ม้า ${arsenalItems(s, "horse").length} · ตำรา ${s.tomes.length}`;
   bindArmory();
+  autoAssign(s);
   $("fLieut").innerHTML = lieutsHTML(s); bindLieuts();
   $("fLieutN").textContent = (s.lieut || []).filter(l => l.alive).length + " คน";
   const fam = [];
