@@ -381,6 +381,7 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
 .relic.arm em{font-style:normal;color:var(--red);font-size:12.5px}
 .appoint{display:flex;flex-wrap:wrap;gap:8px}
 .appoint .btn{min-height:38px;font-size:13.5px;padding:6px 12px}
+.ff{margin-top:10px;font-size:13.5px;min-height:40px}
 </style>
 </head>
 <body>
@@ -2464,6 +2465,20 @@ function rulerTarget(s) {
 const battleOut = (s, r) => { if (r.ok && s.alive && (s.ctx.cap || 0) >= 60) s.nextEvent = "c_captives"; if (r.ok && R() < 0.3) { const pool = RELICS.filter(x => (x.type === "weapon" || x.type === "horse") && !hasRelic(s, x.id) && x.shop); if (pool.length) { const it = rpick(pool); equipRelic(s, it.id); (r.extra = r.extra || []).push("ยึดได้จากคลังข้าศึก: " + relicIco(it) + it.name); } } return { text: r.text, notes: r.notes, extra: r.extra, fameDelta: r.fameDelta, died: r.died }; };
 const goBattle = (cidKey) => s => { const cid = s.ctx[cidKey || "cid"]; if (cid !== s.loc && !ROADS[s.loc].includes(cid)) { const via = citiesOf("player").find(c => ROADS[c.id].includes(cid)); if (via) s.loc = via.id; } s.ctx.cid = cid; return null; };
 
+const FESTS = [
+  ["เทศกาล", "เทศกาลไหว้พระจันทร์", s => `ทั้ง${cn(s.loc)}ประดับโคมแดง ขนมไหว้พระจันทร์วางขายทุกหัวมุม`, "จัดงานเลี้ยงชมจันทร์ เชิญทุกคน", "ฉลองเงียบ ๆ กับครอบครัว", "ใช้คืนนั้นอ่านตำราใต้แสงจันทร์"],
+  ["เทศกาล", "แข่งเรือมังกรกลางแม่น้ำ", s => `ฝีพายนับร้อยลงแข่งเรือมังกรที่ท่าน้ำ${cn(s.loc)} เสียงกลองดังทั้งวัน`, "สนับสนุนเรือของเมืองเรา", "ไปนั่งดูริมน้ำกับครอบครัว", "ดูการบังคับเรือแล้วคิดเรื่องทัพเรือ"],
+  ["เทศกาล", "ตรุษจีนหลังปีศึก", s => `ปีใหม่มาถึง${cn(s.loc)}อีกครั้ง ประทัดดังไล่ความโชคร้ายของปีที่ผ่านมา`, "แจกอั่งเปาให้ทหารและคนในบ้าน", "กลับไปไหว้บรรพบุรุษที่บ้านเกิด", "ทบทวนสิ่งที่เกิดขึ้นตลอดปี"],
+  ["เทศกาล", "เช็งเม้งไหว้บรรพบุรุษ", s => "ฝนพรำในวันไหว้บรรพบุรุษ ทุกครอบครัวขึ้นเขาไปทำความสะอาดสุสาน", "จัดพิธีไหว้ใหญ่ให้ทหารที่ตายในศึก", "ไปไหว้หลุมศพพ่อแม่อย่างเงียบ ๆ", "เขียนบันทึกประวัติตระกูลไว้ให้ลูกหลาน"],
+  ["ชีวิต", "งานแต่งงานของลูกน้องคนสนิท", s => "นายทหารคนสนิทของคุณแต่งงาน ทั้งค่ายรอดูว่าคุณจะมาร่วมงานหรือไม่", "ไปเป็นเจ้าภาพจัดงานให้", "ไปร่วมงานสั้น ๆ แล้วกลับมาพัก", "ฝากของขวัญไป แล้วทำงานต่อ"]
+];
+const OMENS = [
+  ["ดาวหางพาดฟ้าทางทิศตะวันตก", "โหราจารย์ทั่วแผ่นดินถกกันว่าดาวหางดวงนี้เป็นลางร้ายของใคร"],
+  ["สุริยุปราคากลางวันแสก ๆ", "ฟ้ามืดลงกลางวัน ไก่ขันผิดเวลา ชาวบ้านตีเกราะเคาะไม้ไล่ราหู"],
+  ["ฝนสีแดงตกทั้งคืน", "เช้ามาบ่อน้ำทั้งเมืองเป็นสีแดงจาง ๆ ผู้เฒ่าบอกว่าเป็นลางเลือดตกยางออก"],
+  ["เสือขาวปรากฏตัวบนเขา", "พรานหลายคนยืนยันว่าเห็นเสือขาวเดินบนสันเขา ตำนานว่าเป็นสัตว์มงคลประจำทิศตะวันตก"],
+  ["บ่อน้ำในวังมีมังกรเหลืองผุดขึ้น", "ขันทีลือกันว่าเห็นเงามังกรเหลืองในบ่อน้ำ ราชสำนักถกว่าจะประกาศเป็นลางดีหรือไม่"]
+];
 const ADULT_CARDS = [
   /* ---------- การ์ดศึก (เรียกต่อจากการ์ดอื่น) ---------- */
   { id: "c_battle", chainOnly: true, noSpecial: true,
@@ -2743,15 +2758,16 @@ const ADULT_CARDS = [
       { t: "หาหมอเก่ง (30 ตำลึง)", h: "สุขภาพ +++", need: s => s.gold >= 30, ok: { txt: "หมอฝังเข็มสามครั้ง อาการหายเป็นปลิดทิ้ง", st: { health: 18 }, fn: s => { s.gold -= 30; } } },
       { t: "ฝืนทำงานต่อ", h: "เสี่ยงทรุด", chk: { st: ["health"], dc: 46 }, ok: { txt: "ร่างกายสู้ไหว อาการค่อย ๆ ดีขึ้นเอง", st: { health: 2 } }, fail: { txt: "คุณทรุดหนักจนต้องนอนติดเตียงเดือนกว่า", st: { health: -14 }, deadly: 0.05 } }
     ] },
-  { id: "a_c_festival", repeat: 4, req: s => s.adult,
-    badge: "ชีวิต · เทศกาล", title: "เทศกาลไหว้พระจันทร์",
-    body: s => `ทั้ง${cn(s.loc)}ประดับโคมแดง คนรอบตัวคุณรอดูว่าคุณจะร่วมงานอย่างไร (มีเงิน ${s.gold} ตำลึง)`,
+  { id: "a_c_festival", repeat: 3, req: s => s.adult,
+    setup: s => ({ v: rint(FESTS.length) }),
+    badge: s => "ชีวิต · " + FESTS[s.ctx.v][0], title: s => FESTS[s.ctx.v][1],
+    body: s => FESTS[s.ctx.v][2](s),
     choices: [
-      { t: "จัดงานเลี้ยงใหญ่ เชิญทุกคน (25 ตำลึง)", h: "ชื่อเสียง บารมี", need: s => s.gold >= 25, ok: { txt: "งานเลี้ยงคืนนั้นถูกพูดถึงไปทั้งเมือง", fame: 4, st: { charisma: 2 }, fn: s => { s.gold -= 25; s.morale = clamp(s.morale + 6, 5, 100); } } },
-      { t: "ฉลองเงียบ ๆ กับครอบครัว", h: "สุขภาพ", ok: { txt: "คืนนั้นคุณได้พักอย่างแท้จริง", st: { health: 5 } } },
-      { t: "ใช้คืนนั้นศึกษาตำรา", h: "กลยุทธ์", ok: { txt: "แสงจันทร์สว่างพอให้อ่านหนังสือได้ทั้งคืน", st: { strategy: 2 } } }
+      { tf: s => FESTS[s.ctx.v][3] + " (25 ตำลึง)", h: "ชื่อเสียง บารมี", need: s => s.gold >= 25, ok: { txt: "งานคืนนั้นถูกพูดถึงไปทั้งเมือง", fame: 4, st: { charisma: 2 }, fn: s => { s.gold -= 25; s.morale = clamp(s.morale + 6, 5, 100); } } },
+      { tf: s => FESTS[s.ctx.v][4], h: "สุขภาพ", ok: { txt: "คุณได้พักอย่างแท้จริงในวันนั้น", st: { health: 5 } } },
+      { tf: s => FESTS[s.ctx.v][5], h: "กลยุทธ์", ok: { txt: "ขณะที่คนอื่นฉลอง คุณได้คิดอะไรหลายอย่างออก", st: { strategy: 2 } } }
     ] },
-  { id: "a_c_horse", repeat: 5, req: s => s.adult && s.gold >= 40,
+  { id: "a_c_horse", repeat: 9, req: s => s.adult && s.gold >= 40,
     badge: "ตลาด · อาชาดี", title: "พ่อค้าม้าจากซีเหลียงนำม้าศึกมาขาย",
     body: s => `ม้าศึกตัวสูงใหญ่จากแดนตะวันตกราคา 40 ตำลึง พ่อค้าบอกว่าวิ่งวันละห้าร้อยลี้ (มีเงิน ${s.gold})`,
     choices: [
@@ -2767,12 +2783,15 @@ const ADULT_CARDS = [
       { t: "ขอเป็นศิษย์สายบุ๋น", h: "กลยุทธ์ ปกครอง ++", need: s => s.gold >= 20, ok: { txt: "อาจารย์สอนให้คุณมองแผ่นดินเหมือนกระดานหมาก", st: { strategy: 4, politics: 3 }, fn: s => { s.gold -= 20; } } },
       { t: "ไม่มีเวลา งานรออยู่", h: "", ok: { txt: "คุณกลับไปทำงานตามปกติ", st: { politics: 1 } } }
     ] },
-  { id: "a_c_omen", repeat: 6, req: s => s.adult,
-    badge: "ฟ้าดิน · ลางบอกเหตุ", title: "ดาวหางพาดฟ้าทางทิศตะวันตก",
-    body: "โหราจารย์ทั่วแผ่นดินถกกันว่าดาวหางดวงนี้เป็นลางร้ายของใคร ผู้คนรอบตัวหันมาถามความเห็นคุณ",
+  { id: "a_c_omen", repeat: 5, req: s => s.adult,
+    setup: s => ({ v: rint(OMENS.length) }),
+    badge: "ฟ้าดิน · ลางบอกเหตุ", title: s => OMENS[s.ctx.v][0],
+    body: s => OMENS[s.ctx.v][1] + " ผู้คนรอบตัวหันมาถามความเห็นคุณ",
+    npc: s => NPC_OF.a_c_omen(s),
     choices: [
       { t: "ประกาศว่าเป็นลางดีของเรา", h: "วัดบารมี", chk: { st: ["charisma"], dc: 50 }, ok: { txt: "ผู้คนเชื่อตามคุณ ขวัญกำลังใจพุ่งสูง", fame: 3, fn: s => { s.morale = clamp(s.morale + 8, 5, 100); } }, fail: { txt: "ไม่มีใครเชื่อ บางคนกระซิบว่าคุณหลงตัวเอง", fame: -1 } },
-      { t: "บอกว่าดาวก็คือดาว ไม่เกี่ยวกับใคร", h: "กลยุทธ์", ok: { txt: "บัณฑิตบางคนชื่นชมความคิดของคุณ", st: { strategy: 2 } } }
+      { t: "ให้โหราจารย์ทำพิธีแก้เคล็ด (10 ตำลึง)", h: "สุขภาพ + ความสบายใจ", need: s => s.gold >= 10, ok: { txt: "พิธีจบลงพร้อมควันธูปเต็มลาน ทุกคนสบายใจขึ้น", st: { health: 3 }, fn: s => { s.gold -= 10; } } },
+      { t: "บอกว่าฟ้าก็คือฟ้า ไม่เกี่ยวกับใคร", h: "กลยุทธ์", ok: { txt: "บัณฑิตบางคนชื่นชมความคิดของคุณ", st: { strategy: 2 } } }
     ] }
 ];
 POOL_EVENTS.push(...ADULT_CARDS);
@@ -2896,7 +2915,7 @@ CHILD_EVENTS.push(...TROOP_CARDS.filter(e => e.chainOnly)); // ให้ ALL_EVE
 /* ---------- สะสมอาวุธและม้า ---------- */
 const giveRelic = (s, r) => { if (!r) return "ไม่มีของใหม่ให้เลือกแล้ว"; equipRelic(s, r.id); return `${relicIco(r)}${r.name} เข้าคลังของคุณ`; };
 const GEAR_CARDS = [
-  { id: "a_c_smith", repeat: 3, weight: 1.2, req: s => s.adult && s.gold >= 40 && unownedShop(s, "weapon").length > 0,
+  { id: "a_c_smith", repeat: 6, weight: 0.9, req: s => s.adult && s.gold >= 40 && unownedShop(s, "weapon").length > 0,
     setup: s => { const a = unownedShop(s, "weapon").sort(() => R() - 0.5).slice(0, 2); return a.length ? { a: a[0].id, b: a[1] ? a[1].id : null, pa: 40 + rint(30), pb: 50 + rint(40) } : false; },
     badge: "ตลาด · ช่างตีเหล็ก", title: s => `ช่างตีเหล็กแห่ง${cn(s.loc)}`,
     body: s => { const a = RELICS.find(r => r.id === s.ctx.a), b = s.ctx.b && RELICS.find(r => r.id === s.ctx.b); return `ร้านตีเหล็กเก่าแก่มีของดีสองชิ้น ${a.name} (${s.ctx.pa} ตำลึง)${b ? ` และ${b.name} (${s.ctx.pb} ตำลึง)` : ""} คุณมีเงิน ${s.gold} ตำลึง`; },
@@ -2907,7 +2926,7 @@ const GEAR_CARDS = [
       { t: "ต่อราคาลงครึ่งหนึ่ง", h: "วัดบารมี", need: s => s.gold >= Math.ceil(s.ctx.pa / 2), chk: { st: ["charisma"], dc: 62 }, ok: { fn: s => { s.gold -= Math.ceil(s.ctx.pa / 2); return "ช่างถอนหายใจแล้วยอมขาย " + giveRelic(s, RELICS.find(r => r.id === s.ctx.a)); } }, fail: { txt: "ช่างโกรธจนไล่คุณออกจากร้าน" } },
       { t: "แค่ดู ไม่ซื้อ", h: "", ok: { txt: "คุณลูบคมดาบอย่างเสียดายแล้วเดินออกมา" } }
     ] },
-  { id: "a_c_horsefair", repeat: 3, weight: 1.1, req: s => s.adult && s.gold >= 35 && unownedShop(s, "horse").length > 0,
+  { id: "a_c_horsefair", repeat: 7, weight: 0.8, req: s => s.adult && s.gold >= 35 && unownedShop(s, "horse").length > 0,
     setup: s => { const h = rpick(unownedShop(s, "horse")); return h ? { h: h.id, p: 35 + rint(35) } : false; },
     badge: "ตลาด · ตลาดม้า", title: "ตลาดม้าประจำฤดูใบไม้ผลิ",
     body: s => `ในบรรดาม้าหลายร้อยตัว มีตัวหนึ่งโดดเด่นกว่าใคร ${RELICS.find(r => r.id === s.ctx.h).name} ราคา ${s.ctx.p} ตำลึง (มีเงิน ${s.gold})`,
@@ -2921,6 +2940,7 @@ const GEAR_CARDS = [
 POOL_EVENTS.push(...GEAR_CARDS);
 
 /* ---------- ขุมทรัพย์: ถ้ำลับ บ้านร้าง สุสานโบราณ ซากเรือ ---------- */
+const hasTreasure = s => RELICS.some(r => !hasRelic(s, r.id) && !r.event);
 function treasure(s, rare) {
   const own = r => hasRelic(s, r.id);
   const shop = RELICS.filter(r => !own(r) && r.shop), legend = RELICS.filter(r => !own(r) && !r.shop && !r.event);
@@ -2929,7 +2949,7 @@ function treasure(s, rare) {
 }
 const lootTxt = (s, rare, base) => { const it = treasure(s, rare); if (!it) { s.gold += 40; return base + " ในนั้นมีแต่ทองเก่า 40 ตำลึง"; } equipRelic(s, it.id); return `${base} พบ ${relicIco(it)}${it.name} — ${it.desc}`; };
 const HUNT_CARDS = [
-  { id: "x_cave", repeat: 4, weight: 1.1, req: s => s.adult,
+  { id: "x_cave", repeat: 9, weight: 0.9, req: s => s.adult && hasTreasure(s),
     badge: "ขุมทรัพย์ · ถ้ำลับ", title: "ถ้ำหลังม่านน้ำตก",
     body: s => `พรานป่าแถบ${cn(s.loc)}เล่าว่าหลังน้ำตกมีถ้ำที่ไม่มีใครกล้าเข้า เสียงลมในถ้ำเหมือนคนร้องไห้ ว่ากันว่ายอดฝีมือรุ่นก่อนเคยซ่อนของไว้`,
     npc: s => person(s, "hunter@" + s.year, { g: "M", age: 48, role: "พรานป่าผู้นำทาง", desc: "รู้จักป่าทุกต้นไม้ แต่ไม่ยอมเข้าถ้ำนั้นแม้จะได้เงินมากแค่ไหน", tags: ["ผู้นำทาง"] }),
@@ -2938,7 +2958,7 @@ const HUNT_CARDS = [
       { t: "พาคนไปช่วยกันสำรวจอย่างระวัง", h: "ปลอดภัยกว่า เจอของธรรมดา", need: s => s.troops >= 50 || (s.lieut || []).some(l => l.alive), chk: { st: ["strategy"], dc: 45 }, ok: { fn: s => lootTxt(s, false, "ทีมของคุณพบช่องลับใต้หินงอก") }, fail: { txt: "เดินวนอยู่ในถ้ำทั้งวันไม่เจออะไร มีแต่ค้างคาวบินพรู" } },
       { t: "ไม่เข้า เชื่อคำเตือนพราน", h: "", ok: { txt: "คุณยืนฟังเสียงลมจากปากถ้ำอยู่ครู่หนึ่งแล้วเดินกลับ" } }
     ] },
-  { id: "x_ruin", repeat: 4, weight: 1.1, req: s => s.adult,
+  { id: "x_ruin", repeat: 9, weight: 0.9, req: s => s.adult && hasTreasure(s),
     badge: "ขุมทรัพย์ · บ้านร้าง", title: "คฤหาสน์ร้างตระกูลขุนนางเก่า",
     body: s => `นอกกำแพง${cn(s.loc)}มีคฤหาสน์ที่ถูกทิ้งร้างตั้งแต่ตระกูลเจ้าของถูกประหารยกตระกูล ชาวบ้านลือว่ากลางคืนมีแสงไฟวูบวาบในห้องหนังสือ`,
     choices: [
@@ -2946,14 +2966,14 @@ const HUNT_CARDS = [
       { t: "ค้นตอนกลางวันอย่างละเอียด", h: "วัดกลยุทธ์ เจอของธรรมดาหรือเงิน", chk: { st: ["strategy", "politics"], dc: 95 }, ok: { fn: s => lootTxt(s, false, "ใต้แผ่นอิฐในห้องโถงมีหีบเหล็กฝังไว้") }, fail: { fn: s => { s.gold += 10; return "คนอื่นค้นไปหมดแล้ว เหลือแค่เหรียญทองแดงไม่กี่เหรียญ"; } } },
       { t: "จุดธูปไหว้ดวงวิญญาณแล้วจากไป", h: "บารมี", ok: { txt: "คืนนั้นคุณฝันเห็นชายชราในชุดขุนนางโค้งคำนับขอบคุณ", st: { charisma: 2 } } }
     ] },
-  { id: "x_tomb", repeat: 6, req: s => s.adult && (s.troops >= 200 || s.stats.martial >= 60),
+  { id: "x_tomb", repeat: 12, weight: 0.7, req: s => s.adult && hasTreasure(s) && (s.troops >= 200 || s.stats.martial >= 60),
     badge: "ขุมทรัพย์ · สุสานโบราณ", title: "สุสานแม่ทัพสมัยราชวงศ์ฉิน",
     body: "น้ำป่าพัดดินภูเขาถล่มจนเห็นประตูหินของสุสานโบราณ จารึกหน้าประตูเตือนว่าผู้รบกวนการหลับของแม่ทัพจะต้องคำสาป",
     choices: [
       { t: "เปิดสุสาน", h: "วัดกลยุทธ์ (หลบกับดัก) โอกาสได้ของล้ำค่า", chk: { st: ["strategy"], dc: 62 }, ok: { fn: s => lootTxt(s, true, "ผ่านกับดักลูกศรสามชั้นถึงห้องโลงศพ แม่ทัพโบราณยังกำอาวุธไว้ในมือ"), fame: -2 }, fail: { txt: "กับดักลูกศรพุ่งออกจากผนัง คุณรอดมาได้พร้อมแผลเต็มตัว คนทั้งเมืองลือว่าคุณต้องคำสาป", st: { health: -12 }, fame: -4, deadly: 0.05 } },
       { t: "ปิดสุสานคืนแล้วตั้งศาลบูชา", h: "ชื่อเสียง +", ok: { txt: "ชาวบ้านยกย่องที่คุณเคารพผู้ล่วงลับ", fame: 4 } }
     ] },
-  { id: "x_wreck", repeat: 5, req: s => s.adult && ["south", "central"].includes(region(s)),
+  { id: "x_wreck", repeat: 10, weight: 0.8, req: s => s.adult && hasTreasure(s) && ["south", "central"].includes(region(s)),
     badge: "ขุมทรัพย์ · ซากเรือ", title: "ซากเรือสินค้าโผล่กลางแม่น้ำหน้าแล้ง",
     body: "น้ำในแม่น้ำลดลงจนเห็นซากเรือสินค้าลำใหญ่ที่จมมาหลายสิบปี ชาวประมงบอกว่าเป็นเรือขนบรรณาการไปเมืองหลวง",
     choices: [
@@ -2970,6 +2990,115 @@ CHILD_EVENTS.push({ id: "c_k_cave", minAge: 8, maxAge: 15,
     { t: "เข้าไปด้วยกัน", h: "ดวง อาจเจอของในตำนาน", chk: { luck: 45 }, ok: { fn: s => { const it = RELICS.filter(r => r.type === "tome" && !hasRelic(s, r.id) && !r.event); if (!it.length) return "ในถ้ำมีแต่ภาพวาดบนผนัง"; const t = rpick(it); equipRelic(s, t.id); return `ลึกเข้าไปมีหีบหินใส่ม้วนไม้ไผ่ คุณแอบเก็บไว้ไม่บอกใคร ได้ 📜${t.name}`; }, st: { strategy: 1 } }, fail: { txt: "คบไฟดับกลางทาง ทั้งสองหลงอยู่ในถ้ำจนผู้ใหญ่ออกตามหา โดนตีก้นทั้งคู่", st: { health: -3 } } },
     { t: "ไม่เข้า ไปฟ้องผู้ใหญ่", h: "", ok: { txt: "เพื่อนโกรธคุณไปสามวัน", st: { politics: 1 } } }
   ] });
+
+/* ===================================================================
+ * CARDS 4 — เมืองถูกล้อม · ชีวิตช่วงกลาง (ทายาทเจ้านาย ลูกโต คู่ชีวิต ใส่ร้าย โรคระบาด ภารกิจแบบใหม่)
+ * =================================================================== */
+const siegeOdds = s => { const c = W.cities[s.ctx.cid], f = W.cities[s.ctx.foe]; const def = (c.troops + (s.loc === c.id ? s.troops : 0)) * (1 + c.wall / 100) * (1 + arsenalPower(s) / 2); const atk = f.troops * 0.6; return clamp(Math.round(100 * def / (def + atk) + DIFF[s.diff].chance), 5, 92); };
+const MID_CARDS = [
+  { id: "c_siege", chainOnly: true, noSpecial: true,
+    badge: s => `${W.playerName} · เมืองถูกล้อม`, title: s => `ทัพ${fnm(s, W.cities[s.ctx.foe].owner)}ล้อม${cn(s.ctx.cid)}`,
+    body: s => { const c = W.cities[s.ctx.cid], f = W.cities[s.ctx.foe]; const last = citiesOf("player").length === 1; return `ทหารข้าศึกราว ${fmt(Math.round(f.troops * 0.6))} นายจาก${cn(f.id)}ตั้งค่ายรอบ${cn(c.id)} ในเมืองมีทหารรักษาเมือง ${fmt(c.troops)} นาย${s.loc === c.id ? ` บวกทัพหลวงของคุณ ${fmt(s.troops)} นาย` : ""} กำแพงระดับ ${c.wall}${last ? " นี่คือเมืองสุดท้ายของแคว้น ถ้าแตก แคว้นของคุณจะสิ้นชื่อ" : ""}`; },
+    npc: s => NPC_OF.a_r_expand(s),
+    choices: [
+      { t: "สู้รักษาเมืองจนถึงที่สุด", h: "โอกาสคิดจากทหาร กำแพง และคลังอาวุธ", chanceFn: s => siegeOdds(s), amb: true,
+        ok: { fn: s => { const f = W.cities[s.ctx.foe], c = W.cities[s.ctx.cid]; f.troops = Math.round(f.troops * 0.55); c.troops = Math.round(c.troops * 0.85); s.morale = clamp(s.morale + 10, 5, 100); addNews(s.year, `${cn(c.id)}ต้านทัพ${fnm(s, f.owner)}ไว้ได้`, true); return `ข้าศึกถอยทัพหลังล้อมไม่สำเร็จ ศพเกลื่อนหน้ากำแพง${cn(c.id)}`; }, fame: 5 },
+        fail: { fn: s => { const f = W.cities[s.ctx.foe], c = W.cities[s.ctx.cid], from = f.owner; c.owner = from; c.troops = Math.round(f.troops * 0.3); f.troops = Math.round(f.troops * 0.6); s.troops = Math.round(s.troops * 0.4); const nx = citiesOf("player")[0]; if (nx) s.loc = nx.id; addNews(s.year, `${fnm(s, from)} ตี${cn(c.id)}แตก`, true); syncFaction(s); return `กำแพงพังลงตอนรุ่งสาง คุณพาทหารที่เหลือฝ่าวงล้อมออกมาได้${nx ? `ถึง${cn(nx.id)}` : " กลายเป็นคนไร้แผ่นดินอีกครั้ง"}`; }, deadly: 0.06 } },
+      { t: "ส่งทูตนำทองไปให้ถอยทัพ", hf: s => `ใช้เงิน ${Math.max(40, Math.round(W.cities[s.ctx.foe].troops / 400))} ตำลึง`, need: s => s.gold >= Math.max(40, Math.round(W.cities[s.ctx.foe].troops / 400)),
+        ok: { fn: s => { const g = Math.max(40, Math.round(W.cities[s.ctx.foe].troops / 400)); s.gold -= g; return `แม่ทัพข้าศึกรับทอง ${g} ตำลึงแล้วถอยทัพกลับ แต่ทุกคนรู้ว่าเขาจะกลับมาอีก`; }, fame: -2 } },
+      { tf: s => citiesOf("player").length > 1 ? "ทิ้งเมือง ถอยทัพไปรวมพลที่เมืองอื่น" : "ทิ้งเมือง พาทหารหนีไปตั้งตัวใหม่", h: "เสียเมือง แต่รักษาทัพไว้ได้เกือบหมด",
+        ok: { fn: s => { const f = W.cities[s.ctx.foe], c = W.cities[s.ctx.cid]; c.owner = f.owner; c.troops = Math.round(f.troops * 0.3); f.troops = Math.round(f.troops * 0.7); s.troops = Math.round(s.troops * 0.85); const nx = citiesOf("player")[0]; s.loc = nx ? nx.id : (ROADS[c.id].find(n => W.cities[n].owner === "none") || ROADS[c.id][0]); syncFaction(s); return `คุณถอนทัพออกจาก${cn(c.id)}ก่อนรุ่งสาง ไปตั้งหลักที่${cn(s.loc)}`; }, fame: -3 } },
+      { t: "ยอมสวามิภักดิ์ แลกกับชีวิตชาวเมือง", h: "เข้ารับราชการกับฝ่ายที่ล้อม ยศขุนพล", need: s => citiesOf("player").length === 1,
+        ok: { fn: s => { const f = W.cities[s.ctx.foe], c = W.cities[s.ctx.cid]; c.owner = f.owner; s.lord = f.owner; s.path = "martial"; s.rank = Math.max(4, Math.min(s.rank, 5)); syncFaction(s); sysOnRank(s); return `${factionLeader(f.owner, s.year)}รับคุณเป็นขุนพลด้วยความยินดี ชาวเมืองรอดชีวิตทุกคน`; }, fame: 2 } }
+    ] },
+
+  /* ทายาทเจ้านายชิงบัลลังก์ */
+  { id: "a_l_succession", repeat: 14, weight: 0.9, req: s => isServant(s) && s.rank >= 3 && citiesOf(s.lord).length >= 2,
+    setup: s => ({ a: person(s, "heirA_" + s.lord, { g: "M", type: "noble", age: 24, role: "บุตรคนโต", desc: "ชอบงานเลี้ยงมากกว่างานราชการ แต่ขุนนางเก่าสนับสนุนตามประเพณี", tags: ["ทายาท"] }).name, b: person(s, "heirB_" + s.lord, { g: "M", type: "noble", age: 19, role: "บุตรคนเล็ก", desc: "ฉลาดและทะเยอทะยาน แม่ทัพหนุ่มหลายคนอยู่ข้างเขา", tags: ["ทายาท"] }).name }),
+    badge: s => `ราชสำนัก · ${fnm(s, s.lord)}`, title: "เจ้านายล้มป่วยหนัก ทายาทสองฝ่ายชิงอำนาจ",
+    body: s => `${factionLeader(s.lord, s.year)}นอนซมไม่ได้สติ ขุนนางแบ่งเป็นสองฝ่าย ฝ่ายหนึ่งหนุน${s.ctx.a}บุตรคนโต อีกฝ่ายหนุน${s.ctx.b}บุตรคนเล็กที่เก่งกว่า ทั้งสองส่งคนมาถามว่าคุณจะยืนข้างไหน`,
+    npc: s => person(s, "heirB_" + s.lord, { g: "M", type: "noble", age: 19, role: "บุตรคนเล็ก", desc: "ฉลาดและทะเยอทะยาน แม่ทัพหนุ่มหลายคนอยู่ข้างเขา", tags: ["ทายาท"] }),
+    choices: [
+      { tf: s => `หนุน${s.ctx.a} ตามประเพณี`, h: "ปลอดภัย ผลงาน +", ok: { txt: "ฝ่ายบุตรคนโตชนะตามคาด คุณได้รับความไว้วางใจจากขุนนางเก่า", fn: s => { s.merit += 3; } } },
+      { tf: s => `หนุน${s.ctx.b} ผู้เก่งกว่า`, h: "เสี่ยง ชนะได้เลื่อนยศ แพ้อาจถูกลดยศ", chanceFn: s => clamp(40 + (s.stats.strategy - 50) / 2 + s.fame / 5 + DIFF[s.diff].chance, 10, 85),
+        ok: { fn: s => { promoteRank(s, 1); return `${s.ctx.b}ขึ้นสืบทอดอำนาจ และตั้งคุณเป็น “${rankLabel(s)}”`; }, fame: 3 }, fail: { txt: "ฝ่ายคุณแพ้ คุณถูกลดยศและส่งไปเฝ้าด่านชายแดน", rank: -2 } },
+      { t: "ฉวยโอกาสยึดเมืองที่คุมอยู่ ตั้งตนเป็นใหญ่", h: "ต้องมีทหาร 3,000 นายขึ้นไป", need: s => s.troops >= 3000, amb: true, chanceFn: s => clamp(45 + (s.stats.command - 50) / 2 + s.fame / 4 + DIFF[s.diff].chance, 10, 88),
+        ok: { fn: s => { const lc = citiesOf(s.lord), c = lc.find(x => x.id === s.loc) || lc[0], from = s.lord; s.lord = null; s.switchedLord = true; s.factionChanges++; foundRealm(s); c.owner = "player"; c.touched = true; s.loc = c.id; const nb = ROADS[c.id].map(id => W.cities[id]).find(x => x.owner === from); if (nb) { nb.owner = "player"; nb.touched = true; } syncFaction(s); addNews(s.year, `${s.name} ฉวยจังหวะสงครามชิงบัลลังก์ แยกตัวตั้ง${W.playerName}`, true); return `ระหว่างที่ทายาทฆ่ากันเอง คุณยึด${cn(c.id)}${nb ? `และ${cn(nb.id)}` : ""}ตั้งแคว้นของตัวเอง`; }, fame: -6 },
+        fail: { txt: "แผนรั่ว ทั้งสองฝ่ายหันมารุมคุณ ต้องหนีออกจากเมืองหลวงกลางดึก", fn: s => { s.lord = null; s.troops = Math.round(s.troops * 0.35); syncFaction(s); }, fame: -8, deadly: 0.06 } }
+    ] },
+
+  /* ลูกโต */
+  { id: "a_c_child_grown", weight: 2, repeat: 1, req: s => s.adult && s.children.some(c => !c.grown && s.year - c.born >= 16),
+    setup: s => { const c = s.children.find(c => !c.grown && s.year - c.born >= 16); return c ? { ci: s.children.indexOf(c) } : false; },
+    badge: "ครอบครัว · ลูกโตแล้ว", title: s => `${s.children[s.ctx.ci].name}อายุสิบหกแล้ว`,
+    body: s => { const c = s.children[s.ctx.ci]; return `${c.gender === "M" ? "บุตรชาย" : "บุตรสาว"}ของคุณโตเป็นผู้ใหญ่ ${c.gender === "M" ? "ฝึกทวนทุกเช้าและอยากออกรบกับพ่อแม่" : "เก่งทั้งบัญชีและธนู ไม่ยอมแพ้ใคร"} ถึงเวลาวางอนาคตให้แล้ว`; },
+    npc: s => { const c = s.children[s.ctx.ci]; return person(s, "child_" + c.name, { name: c.name, g: c.gender, type: c.gender === "M" ? "general" : "noble", age: s.year - c.born, role: c.gender === "M" ? "บุตรชาย" : "บุตรสาว", desc: "สายเลือดของคุณ ถ้าคุณตายจะเป็นผู้สืบทอดตระกูล", tags: ["ครอบครัว", "ทายาท"] }); },
+    choices: [
+      { t: "พาออกรบ ให้เป็นรองแม่ทัพ", h: "ได้ขุนพลคนใหม่ (ทายาทจะเก่งขึ้น)", ok: { fn: s => { const c = s.children[s.ctx.ci]; c.grown = true; c.edu = "martial"; const l = addLieut(s, c.gender === "M" ? "บุตรชาย" : "บุตรสาว"); l.name = c.name; l.gender = c.gender; l.born = c.born; l.child = true; return `${c.name}สวมเกราะชุดแรก ยืนข้างคุณหน้ากองทัพ`; } } },
+      { t: "ส่งไปเรียนกับบัณฑิตชื่อดัง (30 ตำลึง)", h: "ทายาทเก่งบุ๋น", need: s => s.gold >= 30, ok: { fn: s => { const c = s.children[s.ctx.ci]; c.grown = true; c.edu = "civil"; s.gold -= 30; return `${c.name}ออกเดินทางไปสำนักศึกษาพร้อมหีบตำรา`; } } },
+      { t: "หาคู่ครองตระกูลใหญ่ ผูกสัมพันธ์การเมือง", h: "เงิน + ชื่อเสียง + ความชอบธรรม", ok: { fn: s => { const c = s.children[s.ctx.ci]; c.grown = true; c.married = true; s.gold += 40; s.legit = clamp((s.legit || 0) + 6, 0, 100); return `งานแต่ง${c.name}ยิ่งใหญ่ ตระกูลฝ่ายคู่ครองส่งสินสอดและทหารคุ้มกันมาให้`; }, fame: 3 } }
+    ] },
+
+  /* คู่ชีวิต */
+  { id: "a_c_spouse", repeat: 6, req: s => s.adult && !!s.spouse,
+    setup: s => ({ v: rint(3) }),
+    badge: "ครอบครัว · คู่ชีวิต", title: s => [`${s.spouse.name}ล้มป่วย`, `${s.spouse.name}เตือนเรื่องคนรอบตัว`, `${s.spouse.name}อยากให้คุณพักบ้าง`][s.ctx.v],
+    body: s => ["ไข้เรื้อรังทำให้คู่ชีวิตของคุณผอมลงทุกวัน หมอบอกว่าต้องใช้ยาจากแดนใต้ซึ่งแพงมาก", "คู่ชีวิตกระซิบตอนดึกว่าเห็นนายทหารคนหนึ่งในบ้านแอบส่งจดหมายออกไปข้างนอก", "ไม่ได้กินข้าวพร้อมหน้ากันมาสามเดือนแล้ว ลูก ๆ ถามทุกวันว่าพ่อแม่จะกลับบ้านเมื่อไร"][s.ctx.v],
+    npc: s => person(s, "spouse", { name: s.spouse.name, g: s.spouse.gender, type: s.spouse.type === "political" ? "noble" : "commoner", age: s.age - 2, role: s.spouse.type === "political" ? "คู่ชีวิต (แต่งงานการเมือง)" : "คู่ชีวิต", desc: `อยู่เคียงข้างคุณตั้งแต่ ค.ศ. ${s.spouse.since}`, tags: ["ครอบครัว"] }),
+    choices: [
+      { tf: s => ["ซื้อยาแพงเท่าไรก็ซื้อ (40 ตำลึง)", "สืบสวนอย่างเงียบ ๆ", "ลาพักหนึ่งฤดูกลับไปอยู่บ้าน"][s.ctx.v], hf: s => ["คู่ชีวิตหายป่วย", "วัดกลยุทธ์", "สุขภาพ บารมี"][s.ctx.v],
+        need: s => s.ctx.v !== 0 || s.gold >= 40, chanceFn: s => s.ctx.v === 1 ? clamp(40 + (s.stats.strategy - 45), 10, 90) : null,
+        ok: { fn: s => { if (s.ctx.v === 0) { s.gold -= 40; return "ยาจากแดนใต้ได้ผล คู่ชีวิตลุกขึ้นมาทำกับข้าวให้คุณได้อีกครั้ง"; } if (s.ctx.v === 1) { s.morale = clamp(s.morale + 6, 5, 100); return "คุณจับไส้ศึกได้ก่อนข่าวสำคัญจะรั่วออกไป"; } addStats(s, { health: 8, charisma: 2 }); return "หนึ่งฤดูกับครอบครัวทำให้คุณกลับมาทำงานด้วยหัวที่ปลอดโปร่ง"; } },
+        fail: { txt: "ไส้ศึกรู้ตัวก่อนและหนีไปได้", fn: s => { s.morale = clamp(s.morale - 5, 5, 100); } } },
+      { tf: s => ["ให้หมอประจำเมืองรักษาไปก่อน", "ไม่เชื่อ คิดว่าระแวงเกินไป", "บอกว่างานสำคัญกว่า"][s.ctx.v], h: "", chk: { luck: 55 },
+        ok: { txt: "เรื่องนั้นผ่านไปได้ด้วยดี" }, fail: { fn: s => { if (s.ctx.v === 0) { const n = s.spouse.name; s.spouse = null; return `${n}จากไปในฤดูหนาวนั้น บ้านทั้งหลังเงียบลงทันที`; } if (s.ctx.v === 1) { s.troops = Math.round(s.troops * 0.9); return "ข่าวลับรั่วไหล ข้าศึกซุ่มตีเสบียงของคุณ"; } addStats(s, { health: -6 }); return "ครอบครัวเริ่มห่างเหิน คุณนอนไม่หลับหลายคืน"; } } }
+    ] },
+
+  /* ถูกใส่ร้าย */
+  { id: "a_l_frame", repeat: 8, req: s => isServant(s) && s.rank >= 3,
+    badge: s => `ราชสำนัก · ${fnm(s, s.lord)}`, title: "ฎีกาลับกล่าวหาว่าคุณยักยอกเสบียง",
+    body: "ขุนนางคู่แข่งยื่นฎีกาลับพร้อมบัญชีปลอม กล่าวหาว่าคุณยักยอกเสบียงทัพ เจ้านายเรียกคุณเข้าพบพรุ่งนี้เช้า",
+    npc: s => NPC_OF.a_l_promote_test(s),
+    choices: [
+      { t: "นำบัญชีจริงไปแก้ข้อกล่าวหา", h: "วัดปกครอง", chk: { st: ["politics"], dc: 55 }, ok: { txt: "บัญชีปลอมถูกจับได้ คู่แข่งถูกลงโทษแทน", fame: 4, fn: s => { s.merit += 2; } }, fail: { txt: "เจ้านายยังไม่เชื่อใจ สั่งลดยศคุณหนึ่งขั้น", rank: -1 } },
+      { t: "ใส่ร้ายกลับให้หนักกว่า", h: "วัดกลยุทธ์ ชื่อเสียงลด", chk: { st: ["strategy"], dc: 58 }, ok: { txt: "คู่แข่งถูกเนรเทศ ทั้งราชสำนักรู้ว่าไม่ควรยุ่งกับคุณ", fame: -3, st: { strategy: 2 } }, fail: { txt: "เล่ห์ของคุณถูกจับได้ คุณเสียทั้งยศและชื่อเสียง", rank: -1, fame: -6 } },
+      { t: "ลาออก ไม่อยู่ในวังวนการเมืองอีก", h: "กลายเป็นคนไร้สังกัด เก็บทหารส่วนตัวไว้ได้บางส่วน", ok: { fn: s => { s.lord = null; s.troops = Math.round(s.troops * 0.25); syncFaction(s); return "คุณวางตราประจำตำแหน่งไว้บนโต๊ะแล้วเดินออกจากวังโดยไม่หันกลับ"; }, fame: 2 } }
+    ] },
+
+  /* โรคระบาด */
+  { id: "a_c_plague", repeat: 10, weight: 0.8, req: s => s.adult && s.age >= 20,
+    badge: "ภัยพิบัติ · โรคระบาด", title: s => `โรคระบาดในค่ายทหารที่${cn(s.loc)}`,
+    body: s => `ทหารเริ่มป่วยตัวร้อนทีละสิบทีละร้อย ${s.troops ? `ทัพของคุณ ${fmt(s.troops)} นายเสี่ยงติดกันทั้งค่าย` : "ชาวเมืองเริ่มหนีออกนอกกำแพง"}`,
+    npc: s => NPC_OF.a_c_illness(s),
+    choices: [
+      { t: "แยกคนป่วยออกไปตั้งค่ายนอกเมือง", h: "เสียทหารบ้าง แต่หยุดการระบาด", ok: { fn: s => { const n = Math.round(s.troops * 0.08); s.troops -= n; return `เสียทหาร ${fmt(n)} นาย แต่โรคไม่ลามต่อ`; } } },
+      { t: "ทุ่มเงินหาหมอและยา (35 ตำลึง)", h: "รักษาทุกคน ชื่อเสียง +", need: s => s.gold >= 35, ok: { txt: "หมอจากทั่วแคว้นมาช่วย ทหารรอดเกือบทุกคน และจำบุญคุณคุณไปตลอด", fame: 4, fn: s => { s.gold -= 35; s.morale = clamp(s.morale + 8, 5, 100); } } },
+      { t: "ไม่ทำอะไร หวังว่าจะหายเอง", h: "ดวง", chk: { luck: 40 }, ok: { txt: "ฝนหนักชะล้างค่ายจนโรคสงบไปเอง" }, fail: { fn: s => { const n = Math.round(s.troops * 0.3); s.troops -= n; addStats(s, { health: -10 }); return `โรคระบาดคร่าทหาร ${fmt(n)} นาย คุณเองก็ติดเชื้อหนัก`; }, deadly: 0.06 } }
+    ] },
+
+  /* ภารกิจแบบใหม่ */
+  { id: "a_l_mission2", repeat: 1.5, weight: 1.3, req: isServant,
+    badge: s => `รับราชการ · ${fnm(s, s.lord)}`, title: "งานลับจากเจ้านาย",
+    body: s => `${factionLeader(s.lord, s.year)}ไล่ทุกคนออกจากห้อง เหลือแต่คุณ แล้วยื่นงานลับให้เลือกหนึ่งอย่าง (ผลงาน ${s.merit}/${4 + s.rank * 2})`,
+    npc: s => leaderNpc(s, s.lord),
+    choices: [
+      { t: "ปลอมตัวไปสืบข่าวในแคว้นศัตรู", h: "วัดกลยุทธ์ เสี่ยงถูกจับ", chanceFn: s => missionChance(s) + (s.stats.strategy - 55) / 3, ok: { txt: "คุณกลับมาพร้อมแผนที่คลังเสบียงของศัตรู", fame: 2, fn: s => { s.merit += 4; } }, fail: { txt: "ถูกจับได้ที่ด่าน ต้องฆ่าทหารยามหนีออกมา", st: { health: -10 }, deadly: 0.04 } },
+      { t: "คุ้มกันคณะทูตไปเจรจาสันติภาพ", h: "วัดวรยุทธ์+บารมี", chanceFn: s => missionChance(s) + (s.stats.martial + s.stats.charisma - 110) / 5, ok: { txt: "คณะทูตถึงปลายทางปลอดภัย การเจรจาเป็นไปด้วยดี", fn: s => { s.merit += 3; s.gold += 15; } }, fail: { txt: "นักฆ่าลอบสังหารทูตต่อหน้าคุณ เจ้านายผิดหวังมาก", fn: s => { s.merit = Math.max(0, s.merit - 2); } } },
+      { t: "สอบสวนขุนนางที่ต้องสงสัยว่าเป็นไส้ศึก", h: "วัดปกครอง", chanceFn: s => missionChance(s) + (s.stats.politics - 55) / 3, ok: { txt: "คุณพบหลักฐานชัดเจน ไส้ศึกถูกจับพร้อมเครือข่ายทั้งหมด", fame: 3, fn: s => { s.merit += 4; } }, fail: { txt: "จับผิดคน ขุนนางผู้บริสุทธิ์ถูกลงโทษ คนในวังเริ่มกลัวคุณ", fame: -4 } }
+    ] },
+
+  /* วัยชรา */
+  { id: "a_c_elder", repeat: 6, req: s => s.adult && s.age >= 55 && !s.flags.retired,
+    badge: "ชีวิต · บั้นปลาย", title: "ผมขาวเต็มศีรษะแล้ว",
+    body: s => `อายุ ${s.age} ปี แผลเก่าปวดทุกครั้งที่ฝนตก ${s.children.length ? `ลูก ${s.children.length} คนรอรับช่วงต่อ` : "ยังไม่มีทายาทสืบตระกูล"} คนรอบตัวเริ่มถามถึงอนาคต`,
+    choices: [
+      { t: "วางมือ ถ่ายทอดทุกอย่างให้คนรุ่นใหม่", h: "สุขภาพ ++ อายุยืนขึ้น (จบเส้นทางอำนาจ)", ok: { txt: "คุณย้ายไปอยู่บ้านสวนริมน้ำ ใช้เวลาสอนหลาน ๆ ฝึกทวน", flag: "retired", st: { health: 12 } } },
+      { t: "เขียนตำราถ่ายทอดประสบการณ์", h: "ชื่อเสียง + วีรกรรม", ok: { txt: "ตำราของคุณถูกคัดลอกส่งต่อกันทั่วแผ่นดิน", fame: 5, deed: "เขียนตำราถ่ายทอดประสบการณ์ชีวิตให้คนรุ่นหลัง" } },
+      { t: "ยังไม่ยอมแก่ ทำงานต่อ", h: "", ok: { txt: "คุณสวมเกราะเหมือนทุกวัน แม้มันจะหนักขึ้นทุกปี", st: { charisma: 1 } } }
+    ] }
+];
+POOL_EVENTS.push(...MID_CARDS.filter(e => !e.chainOnly));
+CHILD_EVENTS.push(...MID_CARDS.filter(e => e.chainOnly));
 
 /* ===================================================================
  * SYSTEMS — ชื่อเสียง, เกียรติยศตระกูล, ทรัพยากรแต่ละสาย, คำสั่งประจำช่วง
@@ -3296,6 +3425,7 @@ const FACTIONS = {
 };
 /* ชื่อ/ผู้นำเปลี่ยนตามปี */
 function factionName(id, y) {
+  if (!id || !FACTIONS[id] && id !== "player" && id !== "cc" && id !== "lb" && id !== "sun") return "ไร้สังกัด";
   if (id === "cc") return y >= 220 ? "วุยก๊ก" : y >= 196 ? "โจโฉ (ฮูโต๋)" : "โจโฉ";
   if (id === "lb") return y >= 221 ? "จ๊กก๊ก" : "เล่าปี่";
   if (id === "sun") return y >= 222 ? "ง่อก๊ก" : "ตระกูลซุน";
@@ -3491,6 +3621,7 @@ function lifeTurn(s) {
     const foes = ROADS[c.id].map(id => W.cities[id]).filter(x => x.owner !== "player" && x.owner !== "none" && x.troops > c.troops * 1.3);
     if (foes.length && R() < 0.07) {
       const f = rpick(foes);
+      if ((own.length === 1 || c.id === s.loc) && !s._siege && s.adult) { s._siege = { cid: c.id, foe: f.id }; return; }
       const defBonus = s.loc === c.id ? s.troops : 0;
       const atk = f.troops * 0.6 * (0.8 + R() * 0.4), def = (c.troops + defBonus) * (1 + c.wall / 100);
       if (atk > def) {
@@ -3970,7 +4101,8 @@ function pickEvent(s, prevYear) {
   {
     const el = pool.filter(okPool);
     if (el.length) {
-      const w = el.map(e => e.weight || 1);
+      const seen = s.seen || {};
+      const w = el.map(e => (e.weight || 1) / (1 + (seen[e.id] || 0) * 0.7));
       let x = R() * w.reduce((a, b) => a + b, 0);
       for (let i = 0; i < el.length; i++) { x -= w[i]; if (x <= 0) return el[i]; }
       return el[el.length - 1];
@@ -4038,14 +4170,16 @@ function step(s) {
     if (cand.setup) { const ctx = cand.setup(s); if (!ctx) { s.cd[cand.id] = s.year + 1; continue; } s.ctx = ctx; } else s.ctx = {};
     ev = cand;
   }
-  if (ev) { if (ev.repeat) s.cd[ev.id] = s.year + (s.half || 0) / 2 + ev.repeat; else s.used[ev.id] = true; s.pending = ev.id; return "event"; }
+  if (s._siege && s.alive) { s.ctx = s._siege; s._siege = null; s.pending = "c_siege"; return "event"; }
+  if (ev) { if (ev.repeat) s.cd[ev.id] = s.year + (s.half || 0) / 2 + ev.repeat; else s.used[ev.id] = true; s.seen = s.seen || {}; s.seen[ev.id] = (s.seen[ev.id] || 0) + 1; s.pending = ev.id; return "event"; }
   return "none";
 }
 
 /* ---------------- ตัวเลือก & โอกาส ---------------- */
 function dyn(s, c) { if (c.tf) c.t = c.tf(s); if (c.hf) c.h = c.hf(s); if (c.duelFn) c.duel = c.duelFn(s); return c; }
-const evB = (s, ev) => typeof ev.badge === "function" ? ev.badge(s) : ev.badge;
-const evT = (s, ev) => typeof ev.title === "function" ? ev.title(s) : ev.title;
+function evView(s, ev, k) { const f = ev[k]; if (typeof f !== "function") return f; s._vc = s._vc || {}; const key = ev.id + k; try { const v = f(s); s._vc[key] = v; return v; } catch (e) { return s._vc[key] || ""; } }
+const evB = (s, ev) => evView(s, ev, "badge");
+const evT = (s, ev) => evView(s, ev, "title");
 function choiceList(s, ev) {
   const list = [];
   ev.choices.forEach((c, i) => {
@@ -4065,7 +4199,7 @@ function choiceList(s, ev) {
 }
 function choiceChance(s, c) {
   const bonus = DIFF[s.diff].chance;
-  if (c.chanceFn) return Math.round(clamp(c.chanceFn(s), 1, 99));
+  if (c.chanceFn) { const v = c.chanceFn(s); if (v != null) return Math.round(clamp(v, 1, 99)); if (!c.chk) return null; }
   if (c.noRoll) return null;
   if (c.luckFixed) return Math.max(5, Math.min(95, c.luckFixed + bonus));
   if (c.chk && c.chk.luck) return Math.max(5, Math.min(95, c.chk.luck + Math.round(bonus / 2)));
@@ -4160,7 +4294,8 @@ function finish(s) {
   let endingId = 6;
   const tier0 = gloryTier(meta.glory || 0);
   if (tier0 >= 7 && s.fame >= 80 && (s.flags.emperor || s.flags.unifiedChina || s.flags.shadowRegent || s.peakRank >= 6)) endingId = 7;
-  else if (s.flags.emperor || s.flags.unifiedChina || (s.path === "free" && s.peakRank >= 6)) endingId = 1;
+  else if (s.flags.emperor || s.flags.unifiedChina || (s.peakLands || 0) >= 6) endingId = 1;
+  else if (s.peakRank >= 6 && s.path !== "civil" && !s.switchedLord) endingId = 3;
   else if (s.flags.shadowRegent || (s.path === "civil" && s.peakRank >= 5)) endingId = 2;
   else if (s.flags.hermit || s.flags.retired && s.peakRank <= 3 || (s.path === "free" && s.peakRank <= 3 && s.age >= 50)) endingId = 5;
   else if (s.factionChanges >= 2 && s.peakRank >= 3) endingId = 4;
@@ -5276,8 +5411,9 @@ function renderEventCard(box) {
       const ch = choiceChance(s, c);
       const pc = c.duel ? `<span class="pc duel">ดวล</span>` : ch != null ? `<span class="pc ${ch < 40 ? "lo" : ch >= 70 ? "hi" : ""}">${ch}%<small>โอกาส</small></span>` : `<span class="pc" style="font-size:13px;color:var(--ink3)">แน่นอน</span>`;
       return `<button class="ch ${c.special ? "special" : ""}" data-i="${i}"><span class="t">${esc(c.t)}${c.unlocked ? `<span class="tag">${esc(c.unlocked)}</span>` : ""}</span>${pc}<span class="h">${esc(c.h || "")}</span></button>`;
-    }).join("")}</div></div>`;
+    }).join("")}</div>${MINOR[ev.id] ? `<button class="btn ghost block ff" id="ffBtn">⏩ ข้ามเรื่องเล็ก ให้ชีวิตดำเนินไปจนเจอเรื่องสำคัญ</button>` : ""}</div>`;
   box.querySelectorAll(".ch").forEach(b => b.onclick = () => onChoose(ev, list[+b.dataset.i]));
+  if (MINOR[ev.id] && $("ffBtn")) $("ffBtn").onclick = () => fastForward();
   if (evNpc && $("npcBtn")) $("npcBtn").onclick = () => { Sound.tap(); openPerson(evNpc); };
 }
 
@@ -5472,6 +5608,28 @@ function nextTurn() {
   if (notes.length) S._orderMsg = { name: `${SEASON[S.half || 0]} ค.ศ. ${S.year}`, text: "", notes, ok: true };
   if (st === "event") { const ev = ALL_EVENTS[S.pending]; (ev.kind === "hist" ? Sound.war : Sound.drum)(); }
   saveGame(S); renderGame();
+}
+
+/* ---------- ข้ามเรื่องเล็ก: เลือกตัวเลือกปลอดภัยให้อัตโนมัติ จนเจอการ์ดสำคัญ ---------- */
+const MINOR = { a_c_festival: 1, a_c_omen: 1, a_c_smith: 1, a_c_horsefair: 1, a_c_horse: 1, x_cave: 1, x_ruin: 1, x_tomb: 1, x_wreck: 1, a_f_tourney: 1, a_c_old_master: 1, a_f_refugees: 1, a_r_fort: 1, a_r_spy: 1, a_f_caravan: 1, a_f_road: 1, a_c_spouse: 1, a_r_harvest: 1, a_r_militia: 1, a_r_fame_volunteers: 1, a_l_mission: 1, a_l_mission2: 1, a_f_wanderer: 1, a_c_illness: 1 };
+function fastForward() {
+  const s = S, notes = []; let n = 0;
+  while (s.alive && s.pending && MINOR[s.pending] && n < 12) {
+    const ev = ALL_EVENTS[s.pending], list = choiceList(s, ev).filter(c => !c.duel && !c.special);
+    const safe = list.slice().sort((a, b) => (choiceChance(s, b) ?? 100) - (choiceChance(s, a) ?? 100))[0] || list[list.length - 1];
+    const rr = resolveChoice(s, ev, safe); s.pending = null;
+    const res = applyOutcome(s, rr.out, rr.success, ev, safe);
+    addLog(s, `[${evT(s, ev)}] ${res.text}`, false, res.delta);
+    notes.push(`${evT(s, ev)}: ${safe.t}${rr.chance != null ? (rr.success ? " ✓" : " ✗") : ""}`);
+    n++;
+    if (!s.alive) break;
+    if (s.nextEvent) { s.pending = s.nextEvent; s.nextEvent = null; break; }
+    let st, g = 0; do { st = step(s); } while (st === "none" && s.alive && ++g < 3);
+    if (st === "dead") break;
+  }
+  if (!s.alive) return endLife();
+  S._orderMsg = { name: `ผ่านไป ${n} เรื่อง`, text: `ตอนนี้ ค.ศ. ${s.year} อายุ ${s.age} ปี`, notes: notes.slice(-6), ok: true };
+  Sound.tap(); saveGame(s); renderGame(); window.scrollTo(0, 0);
 }
 
 boot();
