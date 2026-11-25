@@ -2436,7 +2436,7 @@ function rulerTarget(s) {
   const arr = Array.from(cand); if (!arr.length) return null;
   return arr.sort((a, b) => W.cities[a].troops - W.cities[b].troops)[0];
 }
-const battleOut = r => ({ text: r.text, notes: r.notes, extra: r.extra, fameDelta: r.fameDelta, died: r.died });
+const battleOut = (s, r) => { if (r.ok && s.alive && (s.ctx.cap || 0) >= 60) s.nextEvent = "c_captives"; return { text: r.text, notes: r.notes, extra: r.extra, fameDelta: r.fameDelta, died: r.died }; };
 const goBattle = (cidKey) => s => { const cid = s.ctx[cidKey || "cid"]; if (cid !== s.loc && !ROADS[s.loc].includes(cid)) { const via = citiesOf("player").find(c => ROADS[c.id].includes(cid)); if (via) s.loc = via.id; } s.ctx.cid = cid; return null; };
 
 const ADULT_CARDS = [
@@ -2446,10 +2446,10 @@ const ADULT_CARDS = [
     body: s => { const c = W.cities[s.ctx.cid]; return `ทัพของคุณ ${fmt(s.troops)} นาย ขวัญ ${s.morale} ตั้งค่ายหน้า${cn(s.ctx.cid)} ฝ่ายตรงข้ามคือ${fnm(s, c.owner)} มีทหารรักษาเมือง ${fmt(c.troops)} นาย กำแพงแข็งแรงระดับ ${c.wall} ${s.half === 1 ? "ลมฤดูใบไม้ร่วงพัดแรง เหมาะกับไฟ" : ""}`; },
     choices: ["charge", "ambush", "fire", "siege"].map(t => ({
       tf: s => `${TACTICS[t].name}`, hf: s => TACTICS[t].desc, chanceFn: s => tacticOdds(s, s.ctx.cid, t) * 100, selfRoll: true, amb: true,
-      ok: { fn: s => battleOut(fightCity(s, s.ctx.cid, t)) }
+      ok: { fn: s => battleOut(s, fightCity(s, s.ctx.cid, t)) }
     })).concat([
       { t: "ท้าดวลแม่ทัพรักษาเมือง", h: "มินิเกมดวล ชนะแล้วขวัญข้าศึกแตก", duelFn: s => ({ foe: "garrison", pow: 30 + battleSetup(s, s.ctx.cid).defLead }),
-        ok: { fn: s => { s.duelsWon = Math.max(0, s.duelsWon - 1); s.fame -= 4; return battleOut(fightCity(s, s.ctx.cid, "duel", true)); } }, fail: { fn: s => battleOut(fightCity(s, s.ctx.cid, "duel", false)) } },
+        ok: { fn: s => { s.duelsWon = Math.max(0, s.duelsWon - 1); s.fame -= 4; return battleOut(s, fightCity(s, s.ctx.cid, "duel", true)); } }, fail: { fn: s => battleOut(s, fightCity(s, s.ctx.cid, "duel", false)) } },
       { t: "ถอยทัพกลับ ยังไม่ถึงเวลา", h: "ขวัญทัพลดเล็กน้อย", ok: { txt: "คุณสั่งถอยทัพ ทหารบ่นพึมพำแต่ก็เดินกลับอย่างมีวินัย", fn: s => { s.morale = clamp(s.morale - 4, 5, 100); } } }
     ]) },
 
@@ -2752,6 +2752,121 @@ const ADULT_CARDS = [
 ];
 POOL_EVENTS.push(...ADULT_CARDS);
 DUEL_FOES.garrison = { name: "แม่ทัพรักษาเมือง", spec: { seed: 4242, gender: "M", role: "general" }, hp: 4, style: { slash: 0.4, thrust: 0.3, parry: 0.3 }, tell: "แม่ทัพรักษาเมืองดูระมัดระวัง ไม่ค่อยเปิดช่อง" };
+
+/* ===================================================================
+ * CARDS 3 — กำลังพล: ทหารรักษาเมือง ทัพหลวง เชลย ทหารรับจ้าง ระบบทหารไร่นา
+ * =================================================================== */
+const weakestOwn = s => citiesOf("player").slice().sort((a, b) => a.troops / a.pop - b.troops / b.pop)[0];
+const garrisonSum = () => citiesOf("player").reduce((a, c) => a + c.troops, 0);
+const TROOP_CARDS = [
+  /* หลังชนะศึก: จัดการเชลย */
+  { id: "c_captives", chainOnly: true, noSpecial: true,
+    badge: "หลังศึก · เชลยศึก", title: s => `เชลยศึก ${fmt(s.ctx.cap)} นายรอคำตัดสิน`,
+    body: s => `ทหารที่ยอมแพ้ใน${cn(s.ctx.capCity)}ถูกต้อนมานั่งเรียงในลานกว้าง บางคนยังถือธงเก่าไว้ในมือ ทุกสายตาจับจ้องมาที่คุณ`,
+    npc: s => person(s, "captiveOfficer@" + s.year, { g: "M", type: "general", age: 35, role: "นายกองฝ่ายที่แพ้", desc: "นายกองที่สู้จนวินาทีสุดท้าย แขนยังพันผ้าเปื้อนเลือด เงยหน้าสบตาคุณไม่หลบ", tags: ["เชลย"] }),
+    choices: [
+      { t: "รับเข้าทัพทั้งหมด", h: "ทหารเพิ่มเต็มจำนวน แต่ขวัญลด (ใจยังไม่ภักดี)", amb: true, ok: { fn: s => { const n = s.ctx.cap; s.troops += n; s.morale = clamp(s.morale - 6, 5, 100); s.ctx.cap = 0; return `เชลย ${fmt(n)} นายเปลี่ยนธงมาอยู่ใต้บังคับบัญชาของคุณ`; } } },
+      { t: "ให้ประจำการรักษาเมืองที่เพิ่งยึดได้", h: "ทหารรักษาเมือง +", need: s => W.cities[s.ctx.capCity].owner === "player" || W.cities[s.ctx.capCity].owner === s.lord, ok: { fn: s => { const c = W.cities[s.ctx.capCity], n = s.ctx.cap; c.troops += n; c.order = clamp(c.order + 4, 0, 100); s.ctx.cap = 0; return `${cn(c.id)}มีทหารรักษาเมือง ${fmt(c.troops)} นาย คนท้องถิ่นเฝ้าบ้านตัวเอง ใจสงบกว่าเดิม`; } } },
+      { t: "ปล่อยกลับบ้านพร้อมเสบียงคนละถุง", h: "เสบียง − ชื่อเสียง ++", need: s => s.food >= 5, ok: { fn: s => { s.food -= 5; s.ctx.cap = 0; return "เชลยกราบลาทั้งน้ำตา เรื่องความเมตตาของคุณถูกเล่าต่อไปทั่วแคว้น"; }, fame: 7 } },
+      { t: "คัดเฉพาะคนฝีมือดี ที่เหลือปล่อยไป", h: "ทหารเพิ่มครึ่งหนึ่ง ขวัญขึ้น", ok: { fn: s => { const n = Math.round(s.ctx.cap / 2); s.troops += n; s.morale = clamp(s.morale + 4, 5, 100); s.ctx.cap = 0; return `คุณคัดไว้ ${fmt(n)} นาย ล้วนเป็นทหารผ่านศึก`; }, fame: 2 } }
+    ] },
+
+  /* เจ้าแคว้น */
+  { id: "a_r_tuntian", repeat: 4, req: s => isRuler(s) && !s.flags.tuntian && citiesOf("player").length >= 2,
+    badge: s => `${W.playerName} · นโยบายใหญ่`, title: "ข้อเสนอระบบทหารไร่นา",
+    body: "เสนาธิการเสนอให้ทหารรักษาเมืองทำนาในยามสงบ จับอาวุธในยามศึก เมืองจะเลี้ยงทหารได้มากขึ้นโดยไม่ต้องเก็บภาษีเพิ่ม แต่ต้องลงทุนแจกเมล็ดพันธุ์และวัวไถนา 80 ตำลึง",
+    npc: s => NPC_OF.a_r_expand(s),
+    choices: [
+      { t: "ทำทั่วแคว้น (80 ตำลึง)", h: "ถาวร: ทหารรักษาเมืองโตเร็วขึ้น 60% เพดานสูงขึ้น เสบียงเพิ่มทุกครึ่งปี", need: s => s.gold >= 80, ok: { txt: "ทุ่งนารอบเมืองเต็มไปด้วยทหารถือจอบ ปีหน้ายุ้งฉางจะเต็ม และกำแพงจะไม่ขาดคน", fn: s => { s.gold -= 80; s.flags.tuntian = true; } } },
+      { t: "ลองเฉพาะเมืองที่อ่อนที่สุดก่อน", h: "ทหารเมืองนั้น +", ok: { fn: s => { const c = weakestOwn(s), n = Math.round(c.pop * 0.03); c.troops += n; return `${cn(c.id)}ได้ทหารชาวนาเพิ่ม ${fmt(n)} นาย`; } } },
+      { t: "ยังไม่ทำ", h: "", ok: { txt: "เสนาธิการพับฎีกาเก็บด้วยสีหน้าเสียดาย" } }
+    ] },
+  { id: "a_r_militia", repeat: 2, weight: 1.5, req: s => isRuler(s) && citiesOf("player").some(c => c.order >= 55),
+    setup: s => { const c = weakestOwn(s); return c ? { cid: c.id } : false; },
+    badge: s => `${W.playerName} · ราษฎรอาสา`, title: s => `ชาวเมือง${cn(s.ctx.cid)}ขอตั้งกองอาสา`,
+    body: s => `${cn(s.ctx.cid)}มีทหารรักษาเมืองเพียง ${fmt(W.cities[s.ctx.cid].troops)} นาย จากประชากร ${fmt(W.cities[s.ctx.cid].pop)} คน ผู้อาวุโสในเมืองขอให้คุณอนุญาตตั้งกองอาสาป้องกันบ้านเกิด`,
+    npc: s => person(s, "elder_" + s.ctx.cid, { g: "M", age: 64, role: `ผู้อาวุโสแห่ง${cn(s.ctx.cid)}`, desc: "ผู้นำชุมชนที่คนทั้งเมืองเคารพ เคยผ่านศึกล้อมเมืองมาแล้วสองครั้ง", tags: ["ราษฎร"] }),
+    choices: [
+      { t: "อนุญาตและให้อาวุธ (20 ตำลึง)", h: "ทหารเมืองนั้น ++", need: s => s.gold >= 20, ok: { fn: s => { const c = W.cities[s.ctx.cid], n = Math.round(c.pop * 0.04); s.gold -= 20; c.troops += n; c.order = clamp(c.order + 3, 0, 100); return `กองอาสา ${fmt(n)} คนขึ้นประจำกำแพง${cn(c.id)}`; } } },
+      { t: "อนุญาต แต่ให้ติดอาวุธกันเอง", h: "ทหารเมือง + ไม่เสียเงิน", ok: { fn: s => { const c = W.cities[s.ctx.cid], n = Math.round(c.pop * 0.02); c.troops += n; return `ชาวเมือง ${fmt(n)} คนถือจอบถือเสียมมาเข้าเวรยาม`; } } },
+      { t: "ไม่อนุญาต กลัวกองอาสากลายเป็นกบฏ", h: "", ok: { txt: "ผู้อาวุโสก้มหน้ากลับไปอย่างผิดหวัง", fn: s => { W.cities[s.ctx.cid].order = clamp(W.cities[s.ctx.cid].order - 3, 0, 100); } } }
+    ] },
+  { id: "a_r_garrison", repeat: 1.5, weight: 1.6, req: s => isRuler(s) && citiesOf("player").length >= 2,
+    setup: s => { const c = weakestOwn(s); return c ? { cid: c.id } : false; },
+    badge: s => `${W.playerName} · จัดทัพ`, title: "แม่ทัพใหญ่ถามเรื่องการจัดกำลัง",
+    body: s => `ทัพหลวงมี ${fmt(s.troops)} นาย ทหารรักษาเมืองรวม ${fmt(garrisonSum())} นาย เมืองที่บางที่สุดคือ${cn(s.ctx.cid)} (${fmt(W.cities[s.ctx.cid].troops)} นาย) จะจัดทัพอย่างไร`,
+    npc: s => NPC_OF.a_r_conscript(s),
+    choices: [
+      { t: "แบ่งทัพหลวงไปเฝ้าเมืองที่บางที่สุด", h: "ทัพหลวง −30% → เมืองนั้น", need: s => s.troops >= 300, ok: { fn: s => { const n = Math.round(s.troops * 0.3), c = W.cities[s.ctx.cid]; s.troops -= n; c.troops += n; return `ทหาร ${fmt(n)} นายเดินทัพเข้า${cn(c.id)}`; } } },
+      { t: "เกลี่ยทหารให้ทุกเมืองเท่า ๆ กัน", h: "เมืองชายแดนไม่บางเกินไป", ok: { fn: s => { const own = citiesOf("player"), tot = garrisonSum(), pop = own.reduce((a, c) => a + c.pop, 0); own.forEach(c => c.troops = Math.round(tot * c.pop / pop)); return "ทหารรักษาเมืองถูกโยกย้ายตามขนาดเมือง ทุกกำแพงมีคนเฝ้าพอ"; } } },
+      { t: "ดึงทหารจากทุกเมืองเข้าทัพหลวง", h: "ทัพหลวง ++ เมืองบางลง", amb: true, ok: { fn: s => { let n = 0; citiesOf("player").forEach(c => { const k = Math.round(c.troops * 0.35); c.troops -= k; n += k; }); s.troops += n; return `ทัพหลวงรวมพลเพิ่ม ${fmt(n)} นาย พร้อมออกศึก`; } } }
+    ] },
+  { id: "a_r_defeated_army", repeat: 3, req: s => isRuler(s) && s.fame >= 10,
+    setup: s => { const fs = aliveFactions().filter(f => !["none", "player"].includes(f)); return fs.length ? { f: rpick(fs), n: 1500 + rint(4000) } : false; },
+    badge: s => `${W.playerName} · ทัพพ่ายมาขอพึ่ง`, title: s => `ทัพแตกของ${fnm(s, s.ctx.f)}มาถึงชายแดน`,
+    body: s => `ทหาร ${fmt(s.ctx.n)} นายที่แตกพ่ายจากสงครามกลางแคว้นของ${fnm(s, s.ctx.f)} หิวโหยและไม่มีที่ไป นายกองของพวกเขาขอเข้าพบคุณ`,
+    npc: s => person(s, "beatenCaptain@" + s.year, { g: "M", type: "general", age: 40, role: `นายกองทัพแตก${fnm(s, s.ctx.f)}`, desc: "ทิ้งนายเก่าเพราะถูกปล่อยให้ตายกลางสนามรบ ไม่มีอะไรเหลือนอกจากลูกน้องที่ยังเชื่อใจเขา", tags: ["ทัพแตก"] }),
+    choices: [
+      { t: "รับไว้ทั้งหมด แจกเสบียง", h: "ทหาร ++ เสบียง −", need: s => s.food >= 15, amb: true, ok: { fn: s => { s.food -= 15; s.troops += s.ctx.n; return `ทหาร ${fmt(s.ctx.n)} นายสาบานภักดีต่อ${W.playerName}`; }, fame: 2 } },
+      { t: "รับไว้เป็นทหารรักษาเมืองชายแดน", h: "เมืองที่บางที่สุด ++", ok: { fn: s => { const c = weakestOwn(s); c.troops += s.ctx.n; return `${cn(c.id)}ได้ทหารประจำการ ${fmt(s.ctx.n)} นาย`; } } },
+      { t: "ปลดอาวุธแล้วให้ไปทำนา", h: "ประชากร + ความสงบ +", ok: { fn: s => { const c = weakestOwn(s); c.pop += s.ctx.n; c.order = clamp(c.order + 3, 0, 100); return "ทหารวางดาบรับจอบ กลายเป็นชาวนาในแคว้นของคุณ"; } } }
+    ] },
+  { id: "a_r_mercs", repeat: 3, req: s => isRuler(s) && s.gold >= 60,
+    badge: s => `${W.playerName} · ทหารรับจ้าง`, title: "ชนเผ่าซีเหลียงเสนอทหารม้ารับจ้าง",
+    body: s => `หัวหน้าเผ่าเกี๋ยงนำทหารม้า 3,000 นายมาเสนอรับจ้างหนึ่งฤดูศึก ราคา 60 ตำลึง (คลังมี ${s.gold})`,
+    npc: s => person(s, "qiangChief", { g: "M", type: "general", age: 38, role: "หัวหน้าเผ่าเกี๋ยง", desc: "ขี่ม้าก่อนเดินเป็น ภักดีต่อคนที่จ่ายตรงเวลา และหายไปทันทีถ้าเงินหมด", tags: ["ทหารรับจ้าง"] }),
+    choices: [
+      { t: "จ้างทั้งหมด (60 ตำลึง)", h: "ทัพหลวง +3,000 ทหารม้า", amb: true, ok: { fn: s => { s.gold -= 60; s.troops += 3000; s.morale = clamp(s.morale + 5, 5, 100); if (!s.unit) s.unit = "cav"; return "เสียงกีบม้าสามพันตัวดังสนั่นเข้าค่าย"; } } },
+      { t: "ต่อรองให้อยู่ถาวรแลกที่ดินทุ่งหญ้า", h: "วัดบารมี", chk: { st: ["charisma"], dc: 58 }, ok: { txt: "เผ่าเกี๋ยงย้ายมาตั้งรกรากในแคว้น ทหารม้าของพวกเขากลายเป็นทัพประจำ", fn: s => { s.gold -= 30; s.troops += 2500; s.unit = "cav"; } }, fail: { txt: "หัวหน้าเผ่าหัวเราะแล้วขี่ม้าจากไป" } },
+      { t: "ไม่จ้าง", h: "", ok: { txt: "คุณไม่ไว้ใจทหารที่ภักดีต่อเงิน" } }
+    ] },
+  { id: "a_r_fame_volunteers", repeat: 2, req: s => isRuler(s) && s.fame >= 35,
+    badge: s => `${W.playerName} · ชื่อเสียงดึงดูดคน`, title: "คนหนุ่มจากแคว้นอื่นข้ามแดนมาสมัคร",
+    body: s => `ชื่อเสียงของคุณ (${s.fame}) ลือไปไกลถึงแคว้นอื่น หนุ่มฉกรรจ์นับพันแอบข้ามแดนมารอที่ประตูเมือง`,
+    choices: [
+      { t: "รับเข้าทัพหลวง", h: "ทหาร ++", amb: true, ok: { fn: s => { const n = 800 + s.fame * 40; s.troops += n; return `อาสาสมัคร ${fmt(n)} คนเข้าประจำทัพหลวง`; } } },
+      { t: "ส่งไปประจำเมืองชายแดน", h: "ทหารรักษาเมือง ++", ok: { fn: s => { const n = 800 + s.fame * 40, c = weakestOwn(s); c.troops += n; return `${cn(c.id)}ได้ทหารเพิ่ม ${fmt(n)} นาย`; } } }
+    ] },
+  { id: "a_r_fort", repeat: 3, req: s => isRuler(s) && s.gold >= 30,
+    setup: s => { const c = citiesOf("player").slice().sort((a, b) => a.wall - b.wall)[0]; return c ? { cid: c.id } : false; },
+    badge: s => `${W.playerName} · ป้อมปราการ`, title: s => `กำแพง${cn(s.ctx.cid)}ผุพัง`,
+    body: s => `กำแพง${cn(s.ctx.cid)}แข็งแรงแค่ระดับ ${W.cities[s.ctx.cid].wall} ช่างหลวงเสนอให้ซ่อมใหญ่ ใช้เงิน 30 ตำลึงและแรงงานทหาร`,
+    choices: [
+      { t: "ซ่อมใหญ่ (30 ตำลึง)", h: "กำแพง ++ ป้องกันเมืองง่ายขึ้นมาก", ok: { fn: s => { const c = W.cities[s.ctx.cid]; s.gold -= 30; c.wall = Math.min(100, c.wall + 20); return `กำแพง${cn(c.id)}สูงขึ้นเป็นระดับ ${c.wall}`; } } },
+      { t: "สร้างหอธนูและฝึกพลธนูประจำกำแพง (45 ตำลึง)", h: "กำแพง + ทหารเมือง +", need: s => s.gold >= 45, ok: { fn: s => { const c = W.cities[s.ctx.cid]; s.gold -= 45; c.wall = Math.min(100, c.wall + 10); c.troops += Math.round(c.pop * 0.02); return `${cn(c.id)}มีพลธนูประจำหอ ${fmt(Math.round(c.pop * 0.02))} นาย`; } } },
+      { t: "ไว้ก่อน", h: "", ok: { txt: "คุณเก็บเงินไว้ใช้ทางอื่น" } }
+    ] },
+
+  /* รับราชการ / ไร้สังกัด */
+  { id: "a_l_reinforce", repeat: 1.5, weight: 1.5, req: s => isServant(s) && s.path === "martial" && s.troops < TROOP_CAP[s.rank] * 0.7,
+    badge: s => `ราชการทัพ · ${fnm(s, s.lord)}`, title: "ขอกำลังเสริมจากเมืองหลวง",
+    body: s => `กองทัพของคุณเหลือ ${fmt(s.troops)} นาย จากเพดานยศ ${fmt(TROOP_CAP[s.rank])} นาย ทหารใหม่กำลังจะถูกแบ่งให้หลายแม่ทัพ`,
+    npc: s => leaderNpc(s, s.lord),
+    choices: [
+      { t: "ยื่นฎีกาขอตรง ๆ", h: "วัดบารมี", chanceFn: s => clamp(50 + s.fame / 3 + (s.stats.charisma - 40) / 2 + DIFF[s.diff].chance, 10, 95), ok: { fn: s => { const n = Math.round(TROOP_CAP[s.rank] * 0.25); s.troops = Math.min(TROOP_CAP[s.rank], s.troops + n); return `ได้ทหารเสริม ${fmt(n)} นาย`; } }, fail: { txt: "ทหารใหม่ถูกส่งไปให้แม่ทัพคนโปรดของเจ้านายแทน" } },
+      { t: "เกณฑ์ชาวบ้านรอบค่ายเอง", h: "ทหาร + ชื่อเสียงลดเล็กน้อย", ok: { fn: s => { const n = Math.round(TROOP_CAP[s.rank] * 0.15); s.troops += n; return `ชาวบ้าน ${fmt(n)} คนถูกเกณฑ์เข้าค่าย`; }, fame: -2 } },
+      { t: "ฝึกทหารที่มีให้เก่งขึ้นแทน", h: "ขวัญ + นำทัพ +", ok: { txt: "ทหารน้อยแต่ฝีมือดีขึ้นทุกวัน", st: { command: 2 }, fn: s => { s.morale = clamp(s.morale + 10, 5, 100); } } }
+    ] },
+  { id: "a_f_village_guard", repeat: 2, weight: 1.3, req: s => isFree(s) && s.troops >= 100,
+    badge: "ไร้สังกัด · หมู่บ้านขอความคุ้มครอง", title: "หมู่บ้านริมเขาขอให้คุ้มครอง",
+    body: s => `หมู่บ้านใกล้${cn(s.loc)}ถูกโจรปล้นทุกฤดู ผู้ใหญ่บ้านเสนอให้คนหนุ่มของหมู่บ้านมาเข้าพวกคุณ แลกกับการคุ้มครอง`,
+    npc: s => person(s, "headman@" + s.year, { g: "M", age: 58, role: "ผู้ใหญ่บ้าน", desc: "ปกครองหมู่บ้านมายี่สิบปี เสียลูกชายสองคนให้โจรไปแล้ว", tags: ["ราษฎร"] }),
+    choices: [
+      { t: "รับปาก ตั้งค่ายคุ้มครองหมู่บ้าน", h: "ทหาร + เสบียง + ชื่อเสียง +", ok: { fn: s => { const n = 150 + rint(250); s.troops += n; s.food += 10; return `หนุ่มหมู่บ้าน ${fmt(n)} คนเข้าพวก ชาวบ้านส่งข้าวมาให้ทุกเดือน`; }, fame: 3 } },
+      { t: "เรียกค่าคุ้มครองเป็นเงินแทน", h: "เงิน + ชื่อเสียงลด", ok: { txt: "ชาวบ้านจ่ายอย่างไม่เต็มใจ", fn: s => { s.gold += 25; }, fame: -3 } }
+    ] },
+  { id: "a_f_yellow_remnant", repeat: 4, req: s => isFree(s) && s.year >= 185 && s.year <= 205,
+    badge: "ไร้สังกัด · กองโจรผ้าเหลือง", title: "เศษทัพผ้าเหลืองขอเข้าร่วม",
+    body: "กองโจรผ้าเหลืองที่หลงเหลือจากการปราบปราม ซ่อนตัวในป่ามาหลายปี หัวหน้ากองบอกว่าพร้อมติดตามคนที่ให้ข้าวกินและไม่ถามถึงอดีต",
+    npc: s => person(s, "yellowRemnant", { g: "M", type: "general", age: 36, role: "หัวหน้าเศษทัพผ้าเหลือง", desc: "เคยเป็นศิษย์ของเตียวก๊ก ยังพันผ้าเหลืองไว้ใต้หมวกทุกวัน", tags: ["ผ้าเหลือง"] }),
+    choices: [
+      { t: "รับไว้ทั้งหมด", h: "ทหาร ++ ชื่อเสียงลด (คนมองว่าคบโจร)", amb: true, ok: { fn: s => { const n = 800 + rint(1500); s.troops += n; return `ผ้าเหลือง ${fmt(n)} คนเปลี่ยนมาถือธงของคุณ`; }, fame: -4 } },
+      { t: "รับเฉพาะคนที่ยอมถอดผ้าเหลือง", h: "ทหาร +", ok: { fn: s => { const n = 300 + rint(500); s.troops += n; return `${fmt(n)} คนเผาผ้าเหลืองทิ้งต่อหน้าคุณ`; } } },
+      { t: "ไล่ไป", h: "", ok: { txt: "พวกเขาหายเข้าป่าไปอีกครั้ง" } }
+    ] }
+];
+POOL_EVENTS.push(...TROOP_CARDS.filter(e => !e.chainOnly));
+CHILD_EVENTS.push(...TROOP_CARDS.filter(e => e.chainOnly)); // ให้ ALL_EVENTS รู้จักการ์ดต่อเนื่อง
 
 /* ===================================================================
  * SYSTEMS — ชื่อเสียง, เกียรติยศตระกูล, ทรัพยากรแต่ละสาย, คำสั่งประจำช่วง
@@ -3252,7 +3367,9 @@ function lifeTurn(s) {
   own.forEach(c => {
     s.gold += Math.round(c.pop / 2500 * c.order / 100 * 1.2);
     s.food += Math.round(c.pop / 1200 * c.order / 100);
-    c.troops = Math.round(Math.min(c.pop * 0.1, c.troops + c.pop * 0.003));
+    const tf = s.flags.tuntian ? 1.6 : 1, capT = c.pop * (s.flags.tuntian ? 0.16 : 0.12);
+    if (c.troops < capT) c.troops = Math.round(Math.min(capT, c.troops + c.pop * 0.006 * (0.5 + c.order / 100) * tf + (c.troops < c.pop * 0.02 ? c.pop * 0.004 : 0)));
+    if (s.flags.tuntian) s.food += Math.round(c.pop / 4000);
   });
   if (!s.lord && s.troops > 0) {
     s.food -= Math.ceil(s.troops / 120); s.gold -= Math.ceil(s.troops / 250);
@@ -3452,6 +3569,7 @@ function fightCity(s, cid, t, duelWin) {
   res.notes.push(`${TACTICS[t].name}${tacticOk === true ? " ได้ผล" : tacticOk === false ? " ไม่ได้ผล" : ""} · เสียทหาร ${fmt(loss)} นาย`);
   if (win) {
     const from = c.owner, surrender = Math.round(c.troops * 0.25);
+    s.ctx = s.ctx || {}; s.ctx.cap = Math.round(c.troops * 0.35); s.ctx.capCity = cid;
     res.ok = true; s.troops += surrender; s.morale = clamp(s.morale + 8, 5, 100);
     c.touched = true;
     if (s.lord) {
