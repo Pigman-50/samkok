@@ -355,6 +355,19 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
 .evcard{border:1.5px solid var(--ink);padding:14px;background:rgba(255,255,255,.18)}
 .tip{margin:12px 0 0;padding:10px 12px;border:1.5px dashed var(--gold);background:rgba(154,116,32,.07);font-size:13.5px;line-height:1.6}
 .tip b{color:var(--ink)}
+
+.npc-btn{width:100%;background:none;border-left:0;border-right:0;font:inherit;color:inherit;text-align:left;cursor:pointer;padding:10px 0}
+.npc-btn .pf{width:72px;height:86px;flex:none}
+.npc-t{flex:1;min-width:0}
+.npc-t em{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-style:normal;font-size:13px;color:var(--ink2);margin-top:3px;line-height:1.45}
+.npc-go{font-style:normal;font-size:12.5px;color:var(--red);white-space:nowrap;align-self:center}
+.npc-btn:active{background:rgba(0,0,0,.03)}
+.person-h{display:flex;gap:14px;align-items:center;margin:8px 0 12px}
+.person-h .pf.big{width:120px;height:144px;flex:none}
+.person-h h3{font-size:22px;margin:0 0 4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chips span{font-size:12.5px;padding:3px 10px;border:1px solid var(--line);border-radius:99px;color:var(--ink2)}
+.person-bio{font-size:15px;line-height:1.75;margin:0 0 12px}
 </style>
 </head>
 <body>
@@ -4114,6 +4127,127 @@ function autoAct(s, policy) {
 }
 
 /* ===================================================================
+ * PEOPLE — ตัวละครที่คุณพบในการ์ด: รูป + ประวัติ (คนเดิมตลอดชีวิต)
+ * =================================================================== */
+const HERO_BIO = {
+  liubei: "เชื้อพระวงศ์ฮั่นที่ตกยาก เคยทอเสื่อขายรองเท้า ขึ้นชื่อเรื่องใจกว้างจนคนยอมตายแทน พเนจรไปพึ่งเจ้าเมืองต่าง ๆ นานหลายปีก่อนตั้งจ๊กก๊ก",
+  guanyu: "ขุนพลหนวดงามถือง้าวมังกรเขียว ภักดีต่อเล่าปี่ยิ่งกว่าชีวิต หยิ่งในเกียรติจนบางครั้งกลายเป็นจุดอ่อน",
+  zhangfei: "ขุนพลเสียงดังดุจฟ้าผ่า กล้าหาญไม่กลัวใคร รักพี่น้องสุดหัวใจ แต่ใจร้อนและดื่มหนักจนลงโทษลูกน้องเกินเหตุ",
+  zhaoyun: "ขุนพลชุดขาวจากเสียงสาน ฝีมือทวนไร้ที่ติ ใจเย็นรอบคอบ เคยฝ่าทัพนับแสนคนเดียวเพื่อช่วยบุตรของนาย",
+  zhugeliang: "บัณฑิตเร้นกายแห่งหลงจง ฉายามังกรหลับ อ่านแผ่นดินขาดตั้งแต่ยังไม่ออกจากกระท่อม ทำงานหนักจนแทบไม่ได้นอน",
+  caocao: "ขุนนางผู้ชาญฉลาดและเหี้ยมหาญ ใช้คนตามฝีมือไม่สนชาติตระกูล เป็นทั้งนักรบ นักปกครอง และกวี คนเกรงมากกว่ารัก",
+  lubu: "นักรบอันดับหนึ่งของแผ่นดิน ขี่ม้าเซ็กเธาว์ถือทวนกรีดฟ้า ฝีมือไร้คู่ต่อกร แต่เปลี่ยนนายง่ายจนไม่มีใครไว้ใจ",
+  sunquan: "ผู้สืบทอดกังตั๋งจากพี่ชายตั้งแต่อายุสิบแปด อ่านคนเก่ง รู้จักรอจังหวะ รักษาแผ่นดินใต้ได้นานกว่าใคร",
+  zhouyu: "แม่ทัพหนุ่มรูปงามแห่งง่อ เชี่ยวชาญดนตรีและการทัพเรือ ผู้วางแผนไฟเผาทัพเรือที่ผาแดง",
+  simayi: "ขุนนางผู้อดทนที่สุดในยุค ยอมก้มหัวนานหลายสิบปี รอจนถึงเวลาจึงยึดอำนาจทั้งราชสำนัก",
+  huatuo: "หมอเทวดาผู้เดินทางรักษาคนทั่วแผ่นดิน ผ่าตัดได้ด้วยยาชาที่คิดขึ้นเอง ไม่ยอมรับใช้ขุนนางคนใด",
+  diaochan: "หญิงงามในจวนอ้องอุ้นผู้ฉลาดเกินวัย ใช้ความงามเป็นอาวุธยุให้ลิโป้กับตั๋งโต๊ะแตกกัน",
+  sunshangxiang: "ธิดาตระกูลซุน ชอบธนูและดาบยิ่งกว่าเครื่องประดับ สาวใช้รอบตัวล้วนถืออาวุธ",
+  dongzhuo: "ขุนศึกจากแดนตะวันตกที่บุกเข้าเมืองหลวงแล้วตั้งฮ่องเต้เอง ปกครองด้วยความโหดเหี้ยมจนทั้งแผ่นดินลุกฮือ",
+  jiangwei: "ขุนพลหนุ่มที่ขงเบ้งเลือกเป็นผู้สืบทอด สู้ตีทางเหนือครั้งแล้วครั้งเล่าแม้จ๊กก๊กจะอ่อนแอลงทุกปี",
+  dengai: "ขุนพลวุยพูดติดอ่าง แต่อ่านภูมิประเทศเก่งที่สุดในยุค พาทัพลอดหุบเขาลึกจนตีถึงเมืองหลวงจ๊ก"
+};
+const TRAITS_P = ["ใจร้อน", "ใจเย็น", "ขี้ระแวง", "ซื่อตรง", "เจ้าเล่ห์", "ใจกว้าง", "ขี้เหนียว", "ขี้อาย", "พูดมาก", "ทะเยอทะยาน", "ขี้สงสาร", "เย่อหยิ่ง", "อารมณ์ขัน", "เคร่งครัด", "รักครอบครัว"];
+const hsh = (s, k) => hashStr((s.seed || 0) + ":" + k);
+
+/* คนในชีวิตของคุณ — สร้างครั้งแรกแล้วคงเดิมตลอดชีวิต */
+function person(s, key, o) {
+  s.npcs = s.npcs || {};
+  if (o.fresh) key += "@" + (s.year * 2 + (s.half || 0));
+  if (!s.npcs[key]) {
+    const h = hsh(s, key), g = o.g || (h % 2 ? "M" : "F");
+    const pool = g === "M" ? MALE_NAMES : FEMALE_NAMES;
+    s.npcs[key] = { name: o.name || (o.sur || SURNAMES[h % SURNAMES.length]) + pool[(h >>> 5) % pool.length], seed: 1 + (h % 9999), gender: g, type: o.type || "commoner", born: s.year - (o.age == null ? 30 : o.age), trait: TRAITS_P[(h >>> 9) % TRAITS_P.length] };
+  }
+  const p = s.npcs[key];
+  return { name: p.name, role: o.role, seed: p.seed, gender: p.gender, type: p.type, age: Math.max(1, s.year - p.born), desc: typeof o.desc === "function" ? o.desc(s, p) : o.desc || "", traits: [p.trait].concat(o.tags || []), st: o.st };
+}
+const P_FATHER = s => person(s, "father", { name: s.surname + MALE_NAMES[hsh(s, "fa") % MALE_NAMES.length], g: "M", type: s.classId >= 4 ? "noble" : s.classId === 3 ? "scholar" : "commoner", age: 28 + s.age, role: `บิดา · ${s.fam ? s.fam.father : ""}`, desc: s => `${s.fam ? s.fam.father : "หัวหน้าครอบครัว"} ผู้แบกทั้งบ้านไว้บนบ่า พูดน้อยแต่สังเกตลูกทุกคนอยู่เสมอ`, tags: ["ครอบครัว"] });
+const P_MOTHER = s => person(s, "mother", { g: "F", type: s.classId >= 4 ? "noble" : "commoner", age: 24 + s.age, role: "มารดา", desc: "แม่ผู้ตื่นก่อนทุกคนและนอนหลังสุด รู้ทุกเรื่องในบ้านโดยไม่ต้องมีใครบอก", tags: ["ครอบครัว"] });
+const P_SIB = s => s.fam && s.fam.sib ? person(s, "sib", { name: s.fam.sibName, g: s.fam.sibG, age: s.age + 3, role: s.fam.sibG === "M" ? "พี่ชาย" : "พี่สาว", desc: "โตกว่าคุณไม่กี่ปี ทะเลาะกันทุกวันแต่ใครมารังแกคุณเมื่อไรจะเป็นคนแรกที่ออกหน้า", tags: ["ครอบครัว"] }) : null;
+const P_FRIEND = s => person(s, "friend", { name: s.friend, g: "M", age: s.age, type: s.adult ? "general" : "commoner", role: s.flags.childOath ? "พี่น้องร่วมสาบาน" : "เพื่อนรักวัยเด็ก", desc: s => s.flags.childOath ? "เพื่อนที่สาบานเป็นพี่น้องใต้ต้นท้อ ร่วมเป็นร่วมตายมาตั้งแต่เด็ก" : "เพื่อนเล่นที่ไปไหนไปด้วยกันตั้งแต่จำความได้ ซุกซนพอ ๆ กับคุณ", tags: ["เพื่อน"] });
+function leaderNpc(s, f) {
+  const hk = factionHero(f, s.year);
+  if (hk && Portrait.HEROES[hk]) return { hero: hk, name: Portrait.HEROES[hk].name, role: `ผู้นำ${fnm(s, f)}` };
+  return person(s, "lord_" + f, { name: factionLeader(f, s.year), g: "M", type: "noble", age: 48, role: `ผู้นำ${fnm(s, f)}`, desc: s => `ผู้ครอบครอง ${citiesOf(f).length} หัวเมือง ทหารรวม ${fmt(factionPower(f))} นาย`, tags: ["ผู้นำแคว้น"] });
+}
+const simple = (key, o) => s => person(s, key, o);
+
+const NPC_OF = {
+  c_birth: P_FATHER, c_k_fever: P_MOTHER, c_k_sibling: P_SIB, c_k_river: P_FRIEND, c_k_fields: P_FATHER, c_k_caravan: P_FATHER,
+  c_k_tutor: simple("tutor", { g: "M", type: "scholar", age: 58, role: "อาจารย์ประจำจวน", desc: "บัณฑิตสอบตกสามครั้งที่หันมาสอนเด็ก ถือไม้เรียวติดมือแต่แอบซึ้งทุกครั้งที่ลูกศิษย์ท่องได้", tags: ["ครู"] }),
+  c_k_master_beats: simple("master", { g: "M", type: "noble", age: 52, role: "นายท่านเจ้าของจวน", desc: "เศรษฐีที่ดินผู้ถือว่าบ่าวไพร่เป็นทรัพย์สิน ยิ้มกับแขกแต่โหดกับคนในบ้าน", tags: ["ผู้มีอำนาจ"] }),
+  c_k_bully: simple("bully", { g: "M", type: "noble", age: 13, role: "ลูกเศรษฐีประจำเมือง", desc: "ตัวโตกว่าเด็กวัยเดียวกัน มีลูกสมุนห้าคนตามตลอด พ่อเขาให้เงินกู้ทั้งเมือง", tags: ["คู่ปรับ"] }),
+  c_k_lantern: P_FRIEND, c_k_scrolls: P_FRIEND, c_k_oath: P_FRIEND, c_k_mother: P_MOTHER, c_k_disguise: P_MOTHER, c_k_fire: P_MOTHER,
+  c_k_veteran: simple("veteran", { g: "M", type: "general", age: 56, role: "ทหารผ่านศึกขาเป๋", desc: "เคยรบกับชนเผ่าทางเหนือสิบสองปี เสียขาข้างหนึ่งแลกกับเหรียญตราที่ไม่มีใครจำ ตอนนี้ขายน้ำชาหน้าหมู่บ้าน", tags: ["ผู้รู้"] }),
+  c_k_temple: simple("taoist", { g: "M", type: "scholar", age: 74, role: "นักพรตเฝ้าศาลเจ้า", desc: "ไม่มีใครรู้ว่าอายุเท่าไร ชาวบ้านบอกว่าเห็นหน้าตาแบบนี้มาตั้งแต่รุ่นปู่", tags: ["ลึกลับ"] }),
+  c_k_betroth: simple("suitor", { g: "M", type: "noble", age: 19, role: "บุตรชายตระกูลค้าผ้าไหม", desc: "หนุ่มรูปร่างดี แต่งตัวเกินงาม ไม่เคยทำงานหนักสักวัน ครอบครัวรวยพอจะช่วยบ้านคุณได้ทั้งตระกูล", tags: ["คู่หมั้น"] }),
+  c_k_go: simple("goMaster", { g: "M", type: "scholar", age: 46, role: "ชายแปลกหน้าใต้ต้นสน", desc: "แต่งตัวซอมซ่อแต่นิ้วเรียวขาวไม่เคยจับจอบ วางหมากแต่ละเม็ดราวกับกำลังวางทัพ", tags: ["ลึกลับ"] }),
+  c_k_thief: simple("streetKid", { g: "M", age: 10, role: "เด็กเร่ร่อน", desc: "ผอมจนเห็นซี่โครง เท้าเปล่า ตาไวเหมือนแมว รู้จักทุกซอกซอยในเมือง", tags: ["ข้างถนน"] }),
+  c_k_exam: simple("magistrate", { g: "M", type: "noble", age: 50, role: "นายอำเภอ", desc: "ขุนนางท้องถิ่นที่อยากได้หน้าในราชสำนัก จะเสนอชื่อเด็กคนไหนก็ต้องแน่ใจว่าไม่ทำให้ตัวเองขายหน้า", tags: ["ขุนนาง"] }),
+  c_k_monk: simple("monk", { g: "M", type: "scholar", age: 62, role: "พระธุดงค์จากแดนตะวันตก", desc: "เดินเท้ามาจากดินแดนที่ไกลเกินแผนที่ พูดภาษาฮั่นติดสำเนียงแปลก ๆ แต่ทุกคำฟังแล้วขนลุก", tags: ["ผู้หยั่งรู้"] }),
+  c_k_tax: simple("taxman", { g: "M", type: "general", age: 40, role: "เจ้าหน้าที่เก็บภาษี", desc: "หักภาษีเกินอัตราทุกครั้งแล้วเก็บส่วนต่างเข้ากระเป๋าตัวเอง มีทหารสามคนเดินตามคุ้มกัน", tags: ["ขุนนางฉ้อฉล"] }),
+  c_k_wrestle: simple("wrestler", { g: "M", age: 16, role: "แชมป์ปล้ำหมู่บ้านข้างเคียง", desc: "ไม่เคยแพ้มาสองปีติด ไหล่กว้างเท่าประตู ยิ้มเยาะทุกคนที่ขึ้นลาน", tags: ["คู่แข่ง"] }),
+  c_k_apprentice: P_FATHER, c_k_hunt: P_FATHER, c_k_foal: P_FATHER, c_k_famine: P_FATHER, c_k_fishing: P_FATHER,
+  c_k_kidnap: simple("banditChief", { g: "M", type: "general", age: 38, role: "หัวหน้าโจรภูเขา", desc: "อดีตทหารที่หนีทัพเพราะไม่ได้เงินเดือนสามปี ปล้นเฉพาะคนรวย แต่ก็ฆ่าคนมาไม่น้อย", tags: ["โจร"] }),
+  c_k_love: s => person(s, "firstLove", { g: s.gender === "M" ? "F" : "M", age: s.age, role: s.gender === "M" ? "สาวน้อยข้างบ้าน" : "หนุ่มน้อยข้างบ้าน", desc: "เจอกันที่บ่อน้ำทุกเช้า พูดกันไม่เกินสามคำแต่ทั้งวันก็ยังนึกถึง", tags: ["รักแรก"] }),
+  c_k_swordance: simple("guestGeneral", { g: "M", type: "general", age: 45, role: "แม่ทัพจากเมืองหลวง", desc: "แม่ทัพที่ผ่านศึกมาไม่ต่ำกว่าร้อยครั้ง ตาคมจนเด็กไม่กล้าสบ เป็นแขกคนสำคัญของบิดา", tags: ["ผู้มีอำนาจ"] }),
+  c_k_court_visit: s => person(s, "youngEmperor", { name: "หลิวเหียบ", g: "M", type: "noble", age: s.age, role: "โอรสสวรรค์น้อย", desc: "เด็กชายในชุดเหลืองที่ทุกคนต้องคุกเข่าให้ แต่ดวงตาเหงาเหมือนนกในกรง ไม่มีเพื่อนวัยเดียวกันสักคน", tags: ["ราชวงศ์ฮั่น"] }),
+  c_k_yellow: simple("yellowPreacher", { g: "M", age: 34, role: "สาวกลัทธิผ้าเหลือง", desc: "เคยเป็นชาวนาในหมู่บ้านถัดไป ตอนนี้แจกน้ำมนต์และพูดถึงฟ้าใหม่ด้วยแววตาร้อนแรง", tags: ["ผ้าเหลือง"] }),
+  /* ผู้ใหญ่ */
+  a_f_caravan: simple("silkMerchant", { g: "M", type: "scholar", age: 52, role: "พ่อค้าผ้าไหม", desc: "เดินทางค้าขายมายี่สิบปี จำได้ทุกด่านทุกซ่องโจร ต่อราคาเก่งแต่จ่ายตรงเวลาเสมอ", tags: ["พ่อค้า"] }),
+  a_f_recruit_call: s => leaderNpc(s, W.cities[s.loc].owner),
+  a_f_followers: simple("followerLead", { fresh: true, g: "M", age: 19, role: "หัวโจกหนุ่มไร้บ้าน", desc: "พาเพื่อนร่วมชะตากรรมมาขอเป็นลูกน้อง บ้านถูกเผาในสงครามเมื่อปีก่อน ไม่เหลืออะไรนอกจากแรงกับความกล้า", tags: ["ผู้ติดตาม"] }),
+  a_f_bandit_camp: simple("mtnBandit", { fresh: true, g: "M", type: "general", age: 42, role: "หัวหน้าซ่องโจรบนเขา", desc: "คุมโจรสามร้อยคน รู้ทางลับบนเขาทุกเส้น ชาวบ้านเกลียดแต่ก็กลัวเกินกว่าจะสู้", tags: ["โจร"] }),
+  a_f_refugees: simple("refugeeElder", { fresh: true, g: "M", age: 66, role: "ผู้เฒ่านำขบวนอพยพ", desc: "หัวหน้าหมู่บ้านที่ถูกทหารเผา พาลูกบ้านเดินหนีมาครึ่งเดือน รองเท้าขาดจนเท้าเป็นแผล", tags: ["ผู้อพยพ"] }),
+  a_f_tourney: simple("champion", { fresh: true, g: "M", type: "general", age: 30, role: "แชมป์ประลองร่างยักษ์", desc: "สูงเกินคนทั่วไปหนึ่งศีรษะ ใช้ทวนเหล็กหนักห้าสิบชั่ง ประลองมายี่สิบครั้งไม่เคยแพ้", tags: ["ยอดฝีมือ"] }),
+  a_l_mission: s => leaderNpc(s, s.lord), a_l_campaign: s => leaderNpc(s, s.lord), a_l_suspicion: s => leaderNpc(s, s.lord), a_l_court_debate: s => leaderNpc(s, s.lord),
+  a_l_promote_test: simple("courtRival", { g: "M", type: "scholar", age: 38, role: "คู่แข่งชิงตำแหน่ง", desc: "หลานขุนนางผู้ใหญ่ ฝีมือธรรมดาแต่เส้นสายยาวถึงห้องบรรทม", tags: ["คู่แข่ง"] }),
+  a_l_defect: s => leaderNpc(s, s.ctx.f),
+  a_l_rebel: simple("trustedOfficer", { g: "M", type: "general", age: 33, role: "นายทหารคนสนิท", desc: "ติดตามคุณมาตั้งแต่ยังเป็นนายกอง ภักดีต่อคุณมากกว่าต่อเจ้านาย และทหารใต้บังคับบัญชาก็คิดแบบเดียวกัน", tags: ["คนสนิท"] }),
+  a_l_govern: simple("farmerRep", { fresh: true, g: "M", age: 55, role: "ตัวแทนชาวนา", desc: "ชาวนาที่ทำนาผืนเดียวมาสามชั่วคน ถูกยึดที่ไปโดยมีเพียงกระดาษหนึ่งแผ่นที่เขาอ่านไม่ออก", tags: ["ราษฎร"] }),
+  a_r_expand: simple("advisor", { g: "M", type: "scholar", age: 44, role: "เสนาธิการคู่ใจ", desc: "บัณฑิตที่มาสวามิภักดิ์ตั้งแต่แคว้นยังเล็ก พูดตรงจนบางครั้งฟังแล้วเจ็บ แต่ไม่เคยแนะนำผิด", tags: ["ที่ปรึกษา"] }),
+  a_r_harvest: simple("treasurer", { g: "M", type: "scholar", age: 50, role: "ขุนคลัง", desc: "นับเหรียญได้เร็วกว่าลูกคิด ห่วงคลังมากกว่าห่วงราษฎร", tags: ["ขุนนาง"] }),
+  a_r_conscript: simple("grandGeneral", { g: "M", type: "general", age: 47, role: "แม่ทัพใหญ่", desc: "แม่ทัพผู้คุมการฝึกทหารทั้งแคว้น เชื่อว่าทหารมากชนะทุกอย่าง", tags: ["ขุนพล"] }),
+  a_r_threat: simple("advisor", { g: "M", type: "scholar", age: 44, role: "เสนาธิการคู่ใจ", desc: "บัณฑิตที่มาสวามิภักดิ์ตั้งแต่แคว้นยังเล็ก พูดตรงจนบางครั้งฟังแล้วเจ็บ แต่ไม่เคยแนะนำผิด", tags: ["ที่ปรึกษา"] }),
+  a_r_throne: simple("advisor", { g: "M", type: "scholar", age: 44, role: "เสนาธิการคู่ใจ", desc: "บัณฑิตที่มาสวามิภักดิ์ตั้งแต่แคว้นยังเล็ก พูดตรงจนบางครั้งฟังแล้วเจ็บ แต่ไม่เคยแนะนำผิด", tags: ["ที่ปรึกษา"] }),
+  a_r_envoy: s => person(s, "envoy_" + s.ctx.f, { g: "M", type: "scholar", age: 40, role: `ทูตจาก${fnm(s, s.ctx.f)}`, desc: s => `วาทศิลป์ดีเยี่ยม ยิ้มไม่เคยหาย นายของเขามีทหารรวม ${fmt(factionPower(s.ctx.f))} นาย`, tags: ["ทูต"] }),
+  a_r_spy: simple("spy", { fresh: true, g: "F", age: 24, role: "สาวใช้ในวังที่ถูกจับได้", desc: "ทำงานในวังมาสองปีโดยไม่มีใครสงสัย มือสั่นแต่ปากไม่ยอมบอกชื่อผู้บงการ", tags: ["สายลับ"] }),
+  a_c_oathfriend: P_FRIEND,
+  a_c_illness: simple("doctor", { fresh: true, g: "M", type: "scholar", age: 63, role: "หมอฝังเข็ม", desc: "หมอที่เดินทางรักษาคนทั่วแคว้น ถือกล่องเข็มทองติดตัวและคิดค่ารักษาตามฐานะคนไข้", tags: ["หมอ"] }),
+  a_c_horse: simple("horseTrader", { fresh: true, g: "M", type: "general", age: 41, role: "พ่อค้าม้าจากซีเหลียง", desc: "ชาวเกี๋ยงผิวคล้ำแดด พูดภาษาฮั่นห้วน ๆ รักม้ามากกว่าเงิน แต่ก็ไม่ขายถูก", tags: ["พ่อค้า"] }),
+  a_c_old_master: simple("hermitMaster", { g: "M", type: "scholar", age: 81, role: "ปรมาจารย์เร้นกาย", desc: "เคยเป็นอาจารย์ของขุนพลดังหลายคนก่อนหนีความวุ่นวายขึ้นเขา รับศิษย์ปีละคนเท่านั้น", tags: ["อาจารย์"] }),
+  a_c_omen: simple("astrologer", { g: "M", type: "scholar", age: 70, role: "โหราจารย์", desc: "ดูดาวมาห้าสิบปี ทำนายถูกบ้างผิดบ้าง แต่จำได้แต่ครั้งที่ถูก", tags: ["ผู้หยั่งรู้"] })
+};
+Object.keys(NPC_OF).forEach(id => { const ev = ALL_EVENTS[id]; if (ev && !ev.npc) ev.npc = NPC_OF[id]; });
+// ยอดฝีมือพเนจร: แนบค่าสถานะให้ดูได้
+if (ALL_EVENTS.a_f_wanderer) { const f0 = ALL_EVENTS.a_f_wanderer.npc; ALL_EVENTS.a_f_wanderer.npc = s => { const n = f0(s), w = (W.wanderers[s.loc] || []).find(x => x.id === s.ctx.wid); if (w) { n.st = w.st; n.desc = `${w.kind}ที่พเนจรหานายผู้คู่ควร ฝีมือเป็นที่รู้กันในหมู่นักเลงแถว${cn(s.loc)}`; } return n; }; }
+
+/* ---------- หน้าประวัติตัวละคร ---------- */
+function openPerson(n) {
+  const s = S;
+  let age = n.age, desc = n.desc || "", sub = n.role || "", tags = (n.traits || []).slice(), stat = n.st;
+  if (n.hero) {
+    const L = HERO_LIFE[n.hero];
+    if (L) { age = s.year - L[0]; const f = L[2](s.year); tags.unshift(f === "hermit" ? "ผู้เร้นกาย" : f ? fnm(s, f) : "ยังไร้สังกัด"); }
+    desc = HERO_BIO[n.hero] || desc;
+    tags.push("วีรบุรุษในพงศาวดาร");
+  }
+  const bond = n.hero ? (s.bonds[n.hero] || 0) : null;
+  const row = (a, b) => `<div><span>${a}</span><b>${b}</b></div>`;
+  $("ov").classList.remove("hidden");
+  $("sheet").innerHTML = `<div class="kicker">ประวัติบุคคล</div>
+    <div class="person-h">${pf(npcSpec(n), "big")}<div><h3>${esc(n.name)}</h3><div class="muted">${esc(sub)}</div>
+      ${age ? `<div class="muted" style="margin-top:4px">อายุราว ${age} ปี</div>` : ""}</div></div>
+    ${tags.length ? `<div class="chips">${tags.map(t => `<span>${esc(t)}</span>`).join("")}</div>` : ""}
+    ${desc ? `<p class="person-bio">${esc(desc)}</p>` : ""}
+    ${stat ? `<div class="cgrid">${Object.entries(stat).map(([k, v]) => row(STAT_META[k].name, v)).join("")}</div>` : ""}
+    ${bond ? `<p class="muted" style="font-size:13.5px">มิตรภาพกับคุณ ${bond > 0 ? "+" : ""}${bond}</p>` : ""}
+    <button class="btn ghost block" id="pX" style="margin-top:14px">กลับไปที่การ์ด</button>`;
+  $("pX").onclick = () => $("ov").classList.add("hidden");
+}
+
+/* ===================================================================
  * AUDIO — เสียงสังเคราะห์ด้วย WebAudio (ไม่ต้องโหลดไฟล์)
  * กลองศึก, ฆ้อง, ทอยเต๋า, ดีดพิณกู่เจิงเป็นดนตรีพื้นหลัง
  * =================================================================== */
@@ -4820,7 +4954,8 @@ function renderEventCard(box) {
   const evNpc = typeof ev.npc === "function" ? ev.npc(s) : ev.npc;
   if (evNpc) {
     const b = evNpc.hero ? (s.bonds[evNpc.hero] || 0) : null;
-    npc = `<div class="npc">${pf(npcSpec(evNpc))}<div><b>${esc(evNpc.name)}</b><span>${esc(evNpc.role)}</span>${b ? `<span class="bond">มิตรภาพ ${b > 0 ? "+" : ""}${b}</span>` : ""}</div></div>`;
+    const blurb = evNpc.hero ? (HERO_BIO[evNpc.hero] || "") : (evNpc.desc || "");
+    npc = `<button class="npc npc-btn" id="npcBtn">${pf(npcSpec(evNpc))}<div class="npc-t"><b>${esc(evNpc.name)}</b><span>${esc(evNpc.role)}${evNpc.age && !evNpc.hero ? ` · อายุ ${evNpc.age}` : ""}</span>${blurb ? `<em>${esc(blurb)}</em>` : ""}${b ? `<span class="bond">มิตรภาพ ${b > 0 ? "+" : ""}${b}</span>` : ""}</div><i class="npc-go">ประวัติ ›</i></button>`;
   }
   box.innerHTML = orderMsg() + `<div class="card evcard">
     <div class="ev-badge"><span>${esc(evB(S, ev))}</span><span>อายุ ${s.age}</span></div>
@@ -4831,6 +4966,7 @@ function renderEventCard(box) {
       return `<button class="ch ${c.special ? "special" : ""}" data-i="${i}"><span class="t">${esc(c.t)}${c.unlocked ? `<span class="tag">${esc(c.unlocked)}</span>` : ""}</span>${pc}<span class="h">${esc(c.h || "")}</span></button>`;
     }).join("")}</div></div>`;
   box.querySelectorAll(".ch").forEach(b => b.onclick = () => onChoose(ev, list[+b.dataset.i]));
+  if (evNpc && $("npcBtn")) $("npcBtn").onclick = () => { Sound.tap(); openPerson(evNpc); };
 }
 
 /* ---------- การ์ดเมืองปัจจุบัน ---------- */
