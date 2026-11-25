@@ -368,6 +368,19 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .chips span{font-size:12.5px;padding:3px 10px;border:1px solid var(--line);border-radius:99px;color:var(--ink2)}
 .person-bio{font-size:15px;line-height:1.75;margin:0 0 12px}
+.lts{display:flex;flex-direction:column;gap:8px}
+.lt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--paper2);border:1px solid var(--line);padding:8px;font:inherit;color:inherit;cursor:pointer}
+.lt .pf{width:56px;height:67px}
+.lt b{font-family:var(--serif);font-size:15.5px;display:block}
+.lt .pos{display:inline-block;font-size:12.5px;color:#fff;background:var(--red);padding:1px 8px;margin:2px 0}
+.lt small{display:block;font-size:12px;color:var(--ink3)}
+.lt.dead{opacity:.45}
+.relic.arm{width:100%;border:0;border-bottom:1px dashed var(--line);padding:7px 0;font:inherit;color:inherit;text-align:left;cursor:pointer;background:none}
+.relic.arm small{display:block;font-size:12px;color:var(--ink3)}
+.relic.arm.on{background:rgba(168,36,28,.07)}
+.relic.arm em{font-style:normal;color:var(--red);font-size:12.5px}
+.appoint{display:flex;flex-wrap:wrap;gap:8px}
+.appoint .btn{min-height:38px;font-size:13.5px;padding:6px 12px}
 </style>
 </head>
 <body>
@@ -453,6 +466,7 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
     <details class="fold" open><summary>ทรัพยากร & ชื่อเสียง<small id="fResN"></small></summary><div class="fold-in" id="fRes"></div></details>
     <details class="fold" open><summary>ค่าสถานะ</summary><div class="fold-in" id="fStats"></div></details>
     <details class="fold"><summary>ของคู่กาย & พรสวรรค์<small id="fGearN"></small></summary><div class="fold-in" id="fGear"></div></details>
+    <details class="fold" open><summary>ขุนพลและคนสนิท<small id="fLieutN"></small></summary><div class="fold-in" id="fLieut"></div></details>
     <details class="fold"><summary>ครอบครัว & มิตรภาพ<small id="fFamN"></small></summary><div class="fold-in" id="fFam"></div></details>
   </div>
   <div id="p_log" class="hidden">
@@ -1208,13 +1222,24 @@ const Portrait = (function () {
         { id: "w3", type: "weapon", name: "ทวนกรีดนภาฟางเทียน", bonus: { martial: 25, command: 8 }, cap: { martial: 22 }, desc: "ยอดทวนสำหรับจอมยุทธ์อันดับหนึ่ง ดึงดูดยอดฝีมือมาท้าดวล" },
         { id: "w4", type: "weapon", name: "กระบี่ชิงกังตัดเหล็ก", bonus: { martial: 18, command: 6 }, cap: { martial: 15 }, desc: "กระบี่วิเศษฟันเกราะเหล็กขาดสะบั้นเหมือนตัดหยวก" },
         { id: "w5", type: "weapon", name: "ทวนอสรพิษศึกสะพานเตียงปัน", bonus: { martial: 19, charisma: 6 }, cap: { martial: 16 }, desc: "ทวนยาวดุดันสำหรับทะลวงทัพหน้าข้าศึก" },
-        { id: "w6", type: "weapon", name: "อาชามังกรเซ็กเทา", bonus: { martial: 15, command: 15, health: 12 }, cap: { command: 16 }, desc: "ม้าศึกวิ่งวันละพันลี้ เพิ่มโอกาสรอดตายและไล่กวดศัตรูสูงสุด" },
-        { id: "w7", type: "weapon", name: "ม้าศึกเต๊กเลาข้ามลำน้ำ", bonus: { command: 12, health: 16 }, cap: { health: 15 }, desc: "ม้าคู่บุญที่พาผู้ขี่กระโจนพ้นวิกฤตลอบสังหาร" },
+        { id: "w6", type: "horse", name: "อาชามังกรเซ็กเทา", bonus: { martial: 15, command: 15, health: 12 }, cap: { command: 16 }, desc: "ม้าศึกวิ่งวันละพันลี้ เพิ่มโอกาสรอดตายและไล่กวดศัตรูสูงสุด" },
+        { id: "w7", type: "horse", name: "ม้าศึกเต๊กเลาข้ามลำน้ำ", bonus: { command: 12, health: 16 }, cap: { health: 15 }, desc: "ม้าคู่บุญที่พาผู้ขี่กระโจนพ้นวิกฤตลอบสังหาร" },
         { id: "w8", type: "weapon", name: "กระบี่อาญาสิทธิ์ราชสำนัก", bonus: { command: 16, charisma: 16 }, cap: { command: 15, charisma: 15 }, desc: "สั่งประหารก่อนทูลทีหลัง คุมกองทัพด้วยอำนาจเด็ดขาด" },
         { id: "w9", type: "weapon", name: "เกาทัณฑ์เขาสัตว์ร้อยชั่ง", bonus: { martial: 16, strategy: 5 }, cap: { martial: 14 }, desc: "คันศรแรงส่งสูง สังหารแม่ทัพศัตรูจากบนเชิงเทิน" },
         { id: "w10", type: "weapon", name: "ดาบโบราณกู่ติ้งแห่งกังตั๋ง", bonus: { martial: 14, command: 12 }, cap: { command: 12 }, desc: "ดาบประจำตระกูลแม่ทัพแดนใต้ เสริมขวัญทหารเรือ" },
         { id: "w11", type: "weapon", name: "ทวนคู่เหล็กดำ", bonus: { martial: 17 }, cap: { martial: 14 }, desc: "อาวุธคู่กายจอมพลัง ประจัญบานระยะประชิดไร้เทียมทาน" },
         { id: "w12", type: "weapon", name: "พัดขนนกกระเรียนขาว", bonus: { strategy: 16, charisma: 12 }, cap: { strategy: 15 }, desc: "ของคู่กายยอดกุนซือ บัญชาทัพนับแสนด้วยความสุขุม" },
+
+        // Horses (สะสม)
+        { id: "h1", type: "horse", name: "ม้าขาวเงาหิมะ", bonus: { command: 8, health: 6 }, cap: { command: 6 }, desc: "ม้าขาวทั้งตัวไม่มีจุดด่าง วิ่งในหิมะได้ไม่ลื่น", shop: true },
+        { id: "h2", type: "horse", name: "ม้าศึกกีบเหล็กซีเหลียง", bonus: { command: 10, martial: 4 }, cap: { command: 8 }, desc: "ม้าศึกจากทุ่งหญ้าตะวันตก ไม่ตื่นเสียงกลองศึก", shop: true },
+        { id: "h3", type: "horse", name: "ม้าดำเงาจันทร์", bonus: { martial: 6, health: 10 }, cap: { health: 8 }, desc: "ม้าดำปลอดที่วิ่งกลางคืนเงียบราวเงา เหมาะกับการซุ่มโจมตี", shop: true },
+        { id: "h4", type: "horse", name: "ม้าเหลืองทองแดนเหนือ", bonus: { command: 7, charisma: 7 }, cap: { charisma: 6 }, desc: "ม้างามสีทองที่ทำให้ผู้ขี่ดูสง่าต่อหน้าทหาร", shop: true },
+        // Weapons (ร้านช่างตีเหล็ก)
+        { id: "w13", type: "weapon", name: "ดาบฟันม้าเหล็กกล้า", bonus: { martial: 8, command: 4 }, cap: { martial: 6 }, desc: "ดาบหนักใบกว้าง ฟันขาม้าข้าศึกได้ในครั้งเดียว", shop: true },
+        { id: "w14", type: "weapon", name: "หน้าไม้กลยิงต่อเนื่อง", bonus: { strategy: 6, command: 6 }, cap: { strategy: 5 }, desc: "หน้าไม้ยิงได้สิบดอกติดกัน ออกแบบตามตำราลับ", shop: true },
+        { id: "w15", type: "weapon", name: "ทวนพู่แดงหัวเงิน", bonus: { martial: 10, charisma: 3 }, cap: { martial: 8 }, desc: "ทวนยาวปลายเงินพู่แดง ทหารมองเห็นแต่ไกลว่าแม่ทัพอยู่ตรงไหน", shop: true },
+        { id: "w16", type: "weapon", name: "โล่หนังแรดลายเสือ", bonus: { health: 10, command: 4 }, cap: { health: 8 }, desc: "โล่หนังหนาทาลายเสือ กันธนูได้แม้ยิงระยะใกล้", shop: true },
 
         // Tomes (slot: tome)
         { id: "t1", type: "tome", name: "ตำราพิชัยสงครามซุนวู", bonus: { strategy: 20, command: 16 }, cap: { strategy: 18, command: 15 }, desc: "สุดยอดคัมภีร์การรบ รู้เขารู้เรารบร้อยครั้งชนะร้อยครั้ง" },
@@ -2436,7 +2461,7 @@ function rulerTarget(s) {
   const arr = Array.from(cand); if (!arr.length) return null;
   return arr.sort((a, b) => W.cities[a].troops - W.cities[b].troops)[0];
 }
-const battleOut = (s, r) => { if (r.ok && s.alive && (s.ctx.cap || 0) >= 60) s.nextEvent = "c_captives"; return { text: r.text, notes: r.notes, extra: r.extra, fameDelta: r.fameDelta, died: r.died }; };
+const battleOut = (s, r) => { if (r.ok && s.alive && (s.ctx.cap || 0) >= 60) s.nextEvent = "c_captives"; if (r.ok && R() < 0.3) { const pool = RELICS.filter(x => (x.type === "weapon" || x.type === "horse") && !hasRelic(s, x.id) && x.shop); if (pool.length) { const it = rpick(pool); equipRelic(s, it.id); (r.extra = r.extra || []).push("ยึดได้จากคลังข้าศึก: " + relicIco(it) + it.name); } } return { text: r.text, notes: r.notes, extra: r.extra, fameDelta: r.fameDelta, died: r.died }; };
 const goBattle = (cidKey) => s => { const cid = s.ctx[cidKey || "cid"]; if (cid !== s.loc && !ROADS[s.loc].includes(cid)) { const via = citiesOf("player").find(c => ROADS[c.id].includes(cid)); if (via) s.loc = via.id; } s.ctx.cid = cid; return null; };
 
 const ADULT_CARDS = [
@@ -2536,7 +2561,7 @@ const ADULT_CARDS = [
     badge: "เมือง · ประลองยุทธ์", title: s => `เจ้าเมือง${cn(s.loc)}จัดประลองยุทธ์`,
     body: "ลานประลองหน้าจวนแน่นขนัด ผู้ชนะได้ทองคำห้าสิบตำลึงและอาชาดีหนึ่งตัว คู่ชิงคนสุดท้ายเป็นนักรบร่างยักษ์ที่ยังไม่เคยแพ้",
     choices: [
-      { t: "ลงประลอง", h: "มินิเกมดวล", duel: { foe: "nomad", pow: 52 }, ok: { txt: "คุณชนะการประลอง ได้ทองคำและชื่อเสียงไปทั่วเมือง", fame: 6, fn: s => { s.gold += 50; } }, fail: { txt: "คุณพ่ายในรอบสุดท้าย แต่ผู้ชมปรบมือให้ความกล้า", fame: 2, st: { health: -6 } } },
+      { t: "ลงประลอง", h: "มินิเกมดวล", duel: { foe: "nomad", pow: 52 }, ok: { txt: "คุณชนะการประลอง ได้ทองคำและชื่อเสียงไปทั่วเมือง", fame: 6, fn: s => { s.gold += 50; const pool = RELICS.filter(x => x.type === "horse" && !hasRelic(s, x.id) && x.shop); if (pool.length) { const it = rpick(pool); equipRelic(s, it.id); return { notes: ["รางวัลอาชาดี: " + relicIco(it) + it.name] }; } } }, fail: { txt: "คุณพ่ายในรอบสุดท้าย แต่ผู้ชมปรบมือให้ความกล้า", fame: 2, st: { health: -6 } } },
       { t: "รับพนันข้างสนาม", h: "ดวงล้วน ๆ", chk: { luck: 50 }, ok: { txt: "คุณแทงถูกคน ได้เงินมาก้อนโต", fn: s => { s.gold += 30; } }, fail: { txt: "เสียเงินไปกับการพนัน", fn: s => { s.gold = Math.max(0, s.gold - 15); } } }
     ] },
 
@@ -2730,7 +2755,7 @@ const ADULT_CARDS = [
     badge: "ตลาด · อาชาดี", title: "พ่อค้าม้าจากซีเหลียงนำม้าศึกมาขาย",
     body: s => `ม้าศึกตัวสูงใหญ่จากแดนตะวันตกราคา 40 ตำลึง พ่อค้าบอกว่าวิ่งวันละห้าร้อยลี้ (มีเงิน ${s.gold})`,
     choices: [
-      { t: "ซื้อไว้คู่กาย", h: "นำทัพ + สุขภาพ +", ok: { txt: "ม้าตัวนี้พาคุณรอดจากวงล้อมได้หลายครั้งในภายหลัง", st: { command: 3, health: 3 }, fn: s => { s.gold -= 40; s.flags.goodHorse = true; } } },
+      { t: "ซื้อไว้คู่กาย", h: "นำทัพ + สุขภาพ +", ok: { st: { command: 3, health: 3 }, fn: s => { s.gold -= 40; s.flags.goodHorse = true; return "ม้าตัวนี้พาคุณรอดจากวงล้อมได้หลายครั้งในภายหลัง " + (hasRelic(s, "h2") ? "" : giveRelic(s, RELICS.find(r => r.id === "h2"))); } } },
       { t: "ซื้อยกฝูงให้ทัพ (ใช้เงินทั้งหมด)", h: "ขวัญทัพ ++ (ถ้ามีทัพ)", need: s => s.troops >= 500, ok: { txt: "ทัพของคุณมีทหารม้าเพิ่มขึ้น ขวัญทัพพุ่ง", fn: s => { s.gold = 0; s.morale = clamp(s.morale + 15, 5, 100); if (!s.unit) s.unit = "cav"; } } },
       { t: "ไม่ซื้อ", h: "", ok: { txt: "คุณมองม้าตัวนั้นด้วยความเสียดาย", st: { strategy: 1 } } }
     ] },
@@ -2867,6 +2892,33 @@ const TROOP_CARDS = [
 ];
 POOL_EVENTS.push(...TROOP_CARDS.filter(e => !e.chainOnly));
 CHILD_EVENTS.push(...TROOP_CARDS.filter(e => e.chainOnly)); // ให้ ALL_EVENTS รู้จักการ์ดต่อเนื่อง
+
+/* ---------- สะสมอาวุธและม้า ---------- */
+const giveRelic = (s, r) => { if (!r) return "ไม่มีของใหม่ให้เลือกแล้ว"; equipRelic(s, r.id); return `${relicIco(r)}${r.name} เข้าคลังของคุณ`; };
+const GEAR_CARDS = [
+  { id: "a_c_smith", repeat: 3, weight: 1.2, req: s => s.adult && s.gold >= 40 && unownedShop(s, "weapon").length > 0,
+    setup: s => { const a = unownedShop(s, "weapon").sort(() => R() - 0.5).slice(0, 2); return a.length ? { a: a[0].id, b: a[1] ? a[1].id : null, pa: 40 + rint(30), pb: 50 + rint(40) } : false; },
+    badge: "ตลาด · ช่างตีเหล็ก", title: s => `ช่างตีเหล็กแห่ง${cn(s.loc)}`,
+    body: s => { const a = RELICS.find(r => r.id === s.ctx.a), b = s.ctx.b && RELICS.find(r => r.id === s.ctx.b); return `ร้านตีเหล็กเก่าแก่มีของดีสองชิ้น ${a.name} (${s.ctx.pa} ตำลึง)${b ? ` และ${b.name} (${s.ctx.pb} ตำลึง)` : ""} คุณมีเงิน ${s.gold} ตำลึง`; },
+    npc: s => person(s, "smith_" + s.loc, { g: "M", type: "commoner", age: 55, role: `ช่างตีเหล็กแห่ง${cn(s.loc)}`, desc: "ตีเหล็กมาสามชั่วคน แขนใหญ่เท่าต้นขาคนทั่วไป จำได้ทุกเล่มที่เคยตี", tags: ["ช่างฝีมือ"] }),
+    choices: [
+      { tf: s => `ซื้อ${RELICS.find(r => r.id === s.ctx.a).name} (${s.ctx.pa} ตำลึง)`, hf: s => RELICS.find(r => r.id === s.ctx.a).desc, need: s => s.gold >= s.ctx.pa, ok: { fn: s => { s.gold -= s.ctx.pa; return giveRelic(s, RELICS.find(r => r.id === s.ctx.a)); } } },
+      { tf: s => s.ctx.b ? `ซื้อ${RELICS.find(r => r.id === s.ctx.b).name} (${s.ctx.pb} ตำลึง)` : "ไม่มีชิ้นที่สอง", hf: s => s.ctx.b ? RELICS.find(r => r.id === s.ctx.b).desc : "", need: s => s.ctx.b && s.gold >= s.ctx.pb, ok: { fn: s => { s.gold -= s.ctx.pb; return giveRelic(s, RELICS.find(r => r.id === s.ctx.b)); } } },
+      { t: "ต่อราคาลงครึ่งหนึ่ง", h: "วัดบารมี", need: s => s.gold >= Math.ceil(s.ctx.pa / 2), chk: { st: ["charisma"], dc: 62 }, ok: { fn: s => { s.gold -= Math.ceil(s.ctx.pa / 2); return "ช่างถอนหายใจแล้วยอมขาย " + giveRelic(s, RELICS.find(r => r.id === s.ctx.a)); } }, fail: { txt: "ช่างโกรธจนไล่คุณออกจากร้าน" } },
+      { t: "แค่ดู ไม่ซื้อ", h: "", ok: { txt: "คุณลูบคมดาบอย่างเสียดายแล้วเดินออกมา" } }
+    ] },
+  { id: "a_c_horsefair", repeat: 3, weight: 1.1, req: s => s.adult && s.gold >= 35 && unownedShop(s, "horse").length > 0,
+    setup: s => { const h = rpick(unownedShop(s, "horse")); return h ? { h: h.id, p: 35 + rint(35) } : false; },
+    badge: "ตลาด · ตลาดม้า", title: "ตลาดม้าประจำฤดูใบไม้ผลิ",
+    body: s => `ในบรรดาม้าหลายร้อยตัว มีตัวหนึ่งโดดเด่นกว่าใคร ${RELICS.find(r => r.id === s.ctx.h).name} ราคา ${s.ctx.p} ตำลึง (มีเงิน ${s.gold})`,
+    npc: s => NPC_OF.a_c_horse(s),
+    choices: [
+      { tf: s => `ซื้อ${RELICS.find(r => r.id === s.ctx.h).name}`, hf: s => RELICS.find(r => r.id === s.ctx.h).desc, need: s => s.gold >= s.ctx.p, ok: { fn: s => { s.gold -= s.ctx.p; return giveRelic(s, RELICS.find(r => r.id === s.ctx.h)); } } },
+      { t: "ขอทดลองขี่ก่อน แล้วแข่งกับเจ้าของ", h: "วัดนำทัพ ชนะได้ราคาครึ่งเดียว", need: s => s.gold >= Math.ceil(s.ctx.p / 2), chk: { st: ["command", "martial"], dc: 118 }, ok: { fn: s => { s.gold -= Math.ceil(s.ctx.p / 2); return "คุณควบม้าชนะเจ้าของขาดลอย เขายอมขายครึ่งราคา " + giveRelic(s, RELICS.find(r => r.id === s.ctx.h)); }, fame: 2 }, fail: { txt: "ม้าพยศดีดคุณตกลงกลางตลาด ผู้คนหัวเราะกันลั่น", st: { health: -4 } } },
+      { t: "ไม่ซื้อ", h: "", ok: { txt: "คุณเดินผ่านคอกม้าไปอย่างเสียดาย" } }
+    ] }
+];
+POOL_EVENTS.push(...GEAR_CARDS);
 
 /* ===================================================================
  * SYSTEMS — ชื่อเสียง, เกียรติยศตระกูล, ทรัพยากรแต่ละสาย, คำสั่งประจำช่วง
@@ -3060,7 +3112,9 @@ function doOrder(s, id) {
 }
 function addLieut(s, kind, res) {
   const g = R() < 0.85 ? "M" : "F";
-  const l = { name: rpick(SURNAMES) + rpick(g === "M" ? MALE_NAMES : FEMALE_NAMES), kind, gender: g, seed: 1 + rint(9999), alive: true };
+  const l = { name: rpick(SURNAMES) + rpick(g === "M" ? MALE_NAMES : FEMALE_NAMES), kind, gender: g, seed: 1 + rint(9999), alive: true, since: s.year, born: s.year - 22 - rint(15) };
+  const ks = ["martial", "command", "strategy", "politics", "charisma"], a = rpick(ks), b = rpick(ks.filter(k => k !== a));
+  l.st = { [a]: 62 + rint(25), [b]: 52 + rint(22) };
   s.lieut.push(l);
   if (res) (res.extra || res.notes || []).push(`รองแม่ทัพคนใหม่: ${l.name} (${kind})`);
   return l;
@@ -3367,7 +3421,9 @@ function lifeTurn(s) {
   own.forEach(c => {
     s.gold += Math.round(c.pop / 2500 * c.order / 100 * 1.2);
     s.food += Math.round(c.pop / 1200 * c.order / 100);
-    const tf = s.flags.tuntian ? 1.6 : 1, capT = c.pop * (s.flags.tuntian ? 0.16 : 0.12);
+    const gv = (s.lieut || []).find(l => l.alive && l.gov === c.id);
+    if (gv) c.order = clamp(c.order + 1, 0, 100);
+    const tf = (s.flags.tuntian ? 1.6 : 1) * (gv ? 1.35 : 1), capT = c.pop * (s.flags.tuntian ? 0.16 : 0.12);
     if (c.troops < capT) c.troops = Math.round(Math.min(capT, c.troops + c.pop * 0.006 * (0.5 + c.order / 100) * tf + (c.troops < c.pop * 0.02 ? c.pop * 0.004 : 0)));
     if (s.flags.tuntian) s.food += Math.round(c.pop / 4000);
   });
@@ -3533,10 +3589,10 @@ const TACTICS = {
 };
 function battleSetup(s, cid) {
   const c = W.cities[cid];
-  const lieut = Math.min(3, (s.lieut || []).filter(l => l.alive).length);
+  const lieut = Math.min(3, (s.lieut || []).filter(l => l.alive && !l.gov).length);
   const naval = CITY[cid].spec === "เรือ";
   const unitB = s.unit === "navy" ? (naval ? 1.25 : 0.95) : s.unit === "cav" ? (naval ? 0.85 : 1.12) : s.unit === "xbow" ? 1.05 : 1;
-  const A = s.troops * (0.6 + s.stats.command / 125) * (0.6 + s.morale / 125) * (1 + lieut * 0.06) * unitB;
+  const A = s.troops * (0.6 + s.stats.command / 125) * (0.6 + s.morale / 125) * (1 + lieut * 0.06) * unitB * (1 + arsenalPower(s));
   const defLead = 40 + c.wall / 3;
   const D = Math.max(50, c.troops) * (0.6 + defLead / 125) * (0.6 + 60 / 125);
   return { c, A, D, wallF: 1 + c.wall / 120, defLead };
@@ -3641,15 +3697,23 @@ function loadMeta() { try { const r = localStorage.getItem(META_KEY); if (r) Obj
 function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {} }
 
 /* ---------------- ตัวช่วยค่าสถานะ ---------------- */
-function hasRelic(s, id) { return (s.weapon && s.weapon.id === id) || s.tomes.some(t => t.id === id); }
+function hasRelic(s, id) { return (s.arsenal || []).includes(id) || (s.weapon && s.weapon.id === id) || s.tomes.some(t => t && t.id === id); }
+const relicIco = r => r.type === "weapon" ? "🗡 " : r.type === "horse" ? "🐎 " : "📜 ";
+const arsenalItems = (s, type) => (s.arsenal || []).map(id => RELICS.find(r => r.id === id)).filter(r => r && (!type || r.type === type));
+const arsenalPower = s => Math.min(0.3, arsenalItems(s, "weapon").length * 0.02 + arsenalItems(s, "horse").length * 0.04);
 function equipRelic(s, relicId) {
-  const item = RELICS.find(r => r.id === relicId); if (!item) return;
+  const item = RELICS.find(r => r.id === relicId); if (!item) return false;
   meta.relics[item.id] = true;
-  if (item.type === "weapon") s.weapon = item; else { if (s.tomes.length >= 2) s.tomes.shift(); s.tomes.push(item); }
+  s.arsenal = s.arsenal || [];
+  if (hasRelic(s, item.id) && (s.arsenal.includes(item.id) || item.type === "tome")) return false;
+  if (item.type === "weapon") { s.arsenal.push(item.id); s.weapon = item; }
+  else if (item.type === "horse") { s.arsenal.push(item.id); s.horse = item; }
+  else s.tomes.push(item);
   STAT_KEYS.forEach(k => {
     if (item.cap && item.cap[k]) s.caps[k] = Math.min(130, s.caps[k] + item.cap[k]);
     if (item.bonus && item.bonus[k]) s.stats[k] = Math.min(s.caps[k], s.stats[k] + Math.round(item.bonus[k] * 0.7));
   });
+  return true;
 }
 function addStats(s, d) {
   const out = {};
@@ -3789,7 +3853,7 @@ function newCharacter(opt) {
   if (desc) { s.fame = 15; Object.assign(s.bonds, desc.bond); }
   if (play) s.fame = 10;
   if (desc) equipRelic(s, desc.relic); else if (play && play.relic) equipRelic(s, play.relic); else if (cls.giftRelic) equipRelic(s, rpick(RELICS.filter(r => r.id !== "w3" && r.id !== "t5" && r.id !== "w6")).id);
-  if (heir && heir.weaponId) equipRelic(s, heir.weaponId);
+  if (heir && heir.arsenal) heir.arsenal.forEach(id => equipRelic(s, id)); else if (heir && heir.weaponId) equipRelic(s, heir.weaponId);
   if (s.age >= 16) comeOfAge(s);
   meta.lives = meta.lives; saveMeta();
   addLog(s, heir ? `${s.name} รับมรดกสืบสกุล${s.surname} รุ่นที่ ${s.dynasty.gen} ในวัย ${s.age} ปี` : play ? `${s.name} ลืมตาดูโลก ณ ${s.city} ชะตาวีรบุรุษกลับมาอีกครั้ง` : `ลืมตาดูโลก ณ ${s.city} ในฐานะ${s.className}`, true);
@@ -3956,7 +4020,7 @@ function choiceChance(s, c) {
   if (!c.chk) return null;
   const sum = c.chk.st.reduce((a, k) => a + s.stats[k], 0);
   const per = c.chk.st.length > 1 ? 1.15 : 1.6;
-  let ch = 50 + (sum - c.chk.dc) * per + bonus + sysChanceBonus(s, c, c.evId);
+  let ch = 50 + (sum - c.chk.dc) * per + bonus + sysChanceBonus(s, c, c.evId) + (c.chk.st.includes("strategy") || c.chk.st.includes("politics") ? advisorBonus(s) : 0);
   if (c.ok && c.ok.need7 && (s.rank < 6 || ownCities().length < 10)) ch = 2;
   return Math.round(Math.max(5, Math.min(95, ch)));
 }
@@ -3991,7 +4055,7 @@ function applyOutcome(s, out, success, ev, c) {
   if (out.flag) s.flags[out.flag] = true;
   if (out.bond) Object.keys(out.bond).forEach(k => { s.bonds[k] = (s.bonds[k] || 0) + out.bond[k]; if (out.bond[k] > 0) meta.heroes[k] = true; });
   if (ev && ev.npc && ev.npc.hero) meta.heroes[ev.npc.hero] = true;
-  if (out.relic) { equipRelic(s, out.relic); const r = RELICS.find(x => x.id === out.relic); res.extra.push("ได้รับ " + (r.type === "weapon" ? "🗡 " : "📜 ") + r.name); }
+  if (out.relic) { equipRelic(s, out.relic); const r = RELICS.find(x => x.id === out.relic); res.extra.push("ได้รับ " + relicIco(r) + r.name); }
   if (out.fn) {
     const r = out.fn(s, res);
     if (typeof r === "string") res.text = r;
@@ -4105,7 +4169,7 @@ function heirInfo(s, result) {
   return {
     surname: s.surname, given: c.name.slice(s.surname.length), gender: c.gender, born: c.born, startYear,
     classId: pr >= 6 ? 5 : pr >= 4 ? 4 : pr >= 2 ? 3 : 2, faction: s.faction, city: s.city, edu: c.edu,
-    weaponId: s.weapon ? s.weapon.id : null,
+    weaponId: s.weapon ? s.weapon.id : null, arsenal: (s.arsenal || []).slice(),
     fame: s.fame,
     dynasty: { gen: result.dyn.gen + 1, total: result.dyn.total, founder: result.dyn.founder, parentRank: pr, network: s.network }
   };
@@ -4136,7 +4200,7 @@ const ACHIEVEMENTS = [
   ["family4", "ลูกหลานเต็มเรือน", "มีลูก 4 คน", s => s.children.length >= 4],
   ["dyn3", "สามชั่วคน", "สืบสกุลถึงรุ่นที่ 3", (s, r) => r.dyn.gen >= 3],
   ["dyn5", "ตระกูลห้าชั่วคน", "สืบสกุลถึงรุ่นที่ 5", (s, r) => r.dyn.gen >= 5],
-  ["slots", "คลังอาวุธเต็ม", "มีอาวุธ 1 และตำรา 2 พร้อมกัน", s => s.weapon && s.tomes.length >= 2],
+  ["slots", "คลังสมบัติ", "สะสมอาวุธหรือม้า 4 ชิ้นและตำรา 2 เล่ม", s => (s.arsenal || []).length >= 4 && s.tomes.length >= 2],
   ["redhare", "อาชาพันลี้", "ได้ครอบครองม้าเซ็กเทา", s => hasRelic(s, "w6")],
   ["sunzi", "รู้เขารู้เรา", "ได้ตำราซุนวู", s => hasRelic(s, "t1")],
   ["qingnang", "ศิษย์หมอเทวดา", "ได้คัมภีร์ชิงหนาง", s => hasRelic(s, "t3")],
@@ -4190,7 +4254,9 @@ function loadGame() {
     s.R = () => R();
     if (s.troops == null) { sysInit(s); if (s.adult) sysOnRank(s); }
     s.weapon = s.weapon ? RELICS.find(r => r.id === s.weapon.id) : null;
-    s.tomes = s.tomes.map(t => RELICS.find(r => r.id === t.id));
+    s.tomes = s.tomes.map(t => RELICS.find(r => r.id === t.id)).filter(Boolean);
+    s.horse = s.horse ? RELICS.find(r => r.id === s.horse.id) : null;
+    s.arsenal = s.arsenal || (s.weapon ? [s.weapon.id] : []);
     return s;
   } catch (e) { return null; }
 }
@@ -4264,6 +4330,12 @@ const HERO_BIO = {
   dongzhuo: "ขุนศึกจากแดนตะวันตกที่บุกเข้าเมืองหลวงแล้วตั้งฮ่องเต้เอง ปกครองด้วยความโหดเหี้ยมจนทั้งแผ่นดินลุกฮือ",
   jiangwei: "ขุนพลหนุ่มที่ขงเบ้งเลือกเป็นผู้สืบทอด สู้ตีทางเหนือครั้งแล้วครั้งเล่าแม้จ๊กก๊กจะอ่อนแอลงทุกปี",
   dengai: "ขุนพลวุยพูดติดอ่าง แต่อ่านภูมิประเทศเก่งที่สุดในยุค พาทัพลอดหุบเขาลึกจนตีถึงเมืองหลวงจ๊ก"
+};
+const HERO_ST = {
+  liubei: { charisma: 96, command: 75 }, guanyu: { martial: 97, command: 92 }, zhangfei: { martial: 98, command: 80 }, zhaoyun: { martial: 96, command: 88 },
+  zhugeliang: { strategy: 100, politics: 95 }, caocao: { command: 96, strategy: 94 }, lubu: { martial: 100, command: 70 }, sunquan: { charisma: 92, politics: 85 },
+  zhouyu: { strategy: 96, command: 94 }, simayi: { strategy: 97, politics: 92 }, huatuo: { politics: 70, charisma: 80 }, diaochan: { charisma: 98, strategy: 75 },
+  sunshangxiang: { martial: 82, command: 70 }, dongzhuo: { command: 80, martial: 85 }, jiangwei: { martial: 89, strategy: 88 }, dengai: { command: 94, strategy: 90 }
 };
 const TRAITS_P = ["ใจร้อน", "ใจเย็น", "ขี้ระแวง", "ซื่อตรง", "เจ้าเล่ห์", "ใจกว้าง", "ขี้เหนียว", "ขี้อาย", "พูดมาก", "ทะเยอทะยาน", "ขี้สงสาร", "เย่อหยิ่ง", "อารมณ์ขัน", "เคร่งครัด", "รักครอบครัว"];
 const hsh = (s, k) => hashStr((s.seed || 0) + ":" + k);
@@ -4347,7 +4419,7 @@ function openPerson(n) {
   let age = n.age, desc = n.desc || "", sub = n.role || "", tags = (n.traits || []).slice(), stat = n.st;
   if (n.hero) {
     const L = HERO_LIFE[n.hero];
-    if (L) { age = s.year - L[0]; const f = L[2](s.year); tags.unshift(f === "hermit" ? "ผู้เร้นกาย" : f ? fnm(s, f) : "ยังไร้สังกัด"); }
+    if (L) { age = s.year - L[0]; const f = L[2](s.year); if (!n.mine) tags.unshift(f === "hermit" ? "ผู้เร้นกาย" : f ? fnm(s, f) : "ยังไร้สังกัด"); }
     desc = HERO_BIO[n.hero] || desc;
     tags.push("วีรบุรุษในพงศาวดาร");
   }
@@ -4364,6 +4436,74 @@ function openPerson(n) {
     <button class="btn ghost block" id="pX" style="margin-top:14px">กลับไปที่การ์ด</button>`;
   $("pX").onclick = () => $("ov").classList.add("hidden");
 }
+
+/* ---------- ขุนพลใต้บังคับบัญชา: ตำแหน่ง ---------- */
+const FIELD_POS = ["รองแม่ทัพใหญ่", "แม่ทัพกองหน้า", "แม่ทัพปีกซ้าย", "แม่ทัพปีกขวา", "แม่ทัพกองหลัง", "นายกององครักษ์"];
+function lieutPos(s, l) {
+  if (!l.alive) return "สิ้นชีพแล้ว";
+  if (l.gov && W.cities[l.gov] && W.cities[l.gov].owner === "player") return `เจ้าเมือง${cn(l.gov)}`;
+  if (l.gov) l.gov = null;
+  if (l.role === "adv") return "เสนาธิการ";
+  const field = s.lieut.filter(x => x.alive && !x.gov && x.role !== "adv");
+  const i = field.indexOf(l);
+  return i < 3 ? FIELD_POS[i] + " · ร่วมรบ" : FIELD_POS[Math.min(i, FIELD_POS.length - 1)] + " · กองหนุน";
+}
+function lieutNpc(s, l) {
+  const base = l.hero ? { hero: l.hero, name: l.name } : { name: l.name, seed: l.seed, gender: l.gender || "M", type: (l.st && (l.st.strategy || l.st.politics) > (l.st.martial || l.st.command || 0)) ? "scholar" : "general" };
+  if (l.hero && HERO_ST[l.hero]) l.st = HERO_ST[l.hero];
+  return Object.assign(base, { mine: true, role: lieutPos(s, l) + " · " + l.kind, age: l.born ? s.year - l.born : null, st: l.st, desc: l.hero ? "" : `${l.kind}ที่ติดตามคุณมาตั้งแต่ ค.ศ. ${l.since || s.year}`, traits: [l.kind] });
+}
+function lieutsHTML(s) {
+  const L = s.lieut || [];
+  if (!L.length) return `<div class="relic empty"><span>ยังไม่มีขุนพลติดตาม ชวนยอดฝีมือพเนจร รับวีรบุรุษ หรือสาบานเป็นพี่น้อง จะได้รองแม่ทัพมาช่วยรบ</span><span></span></div>`;
+  return `<p class="muted" style="font-size:12.5px;margin:0 0 8px">ขุนพลที่ร่วมรบ (ไม่เกิน 3 คน) เพิ่มกำลังรบคนละ 6% · เสนาธิการช่วยตัวเลือกที่ใช้กลยุทธ์ · เจ้าเมืองทำให้เมืองสงบและทหารเพิ่มเร็วขึ้น · แตะเพื่อดูประวัติหรือแต่งตั้ง</p><div class="lts">` +
+    L.map((l, i) => { const n = lieutNpc(s, l); return `<button class="lt ${l.alive ? "" : "dead"}" data-li="${i}">${pf(npcSpec(n))}<div><b>${esc(l.name)}</b><span class="pos">${esc(lieutPos(s, l))}</span><small>${esc(l.kind)}${l.st ? " · " + Object.entries(l.st).map(([k, v]) => STAT_META[k].name + " " + v).join(" · ") : ""}</small></div></button>`; }).join("") + `</div>`;
+}
+function bindLieuts() { document.querySelectorAll("#fLieut [data-li]").forEach(b => b.onclick = () => openLieut(+b.dataset.li)); }
+function openLieut(i) {
+  const s = S, l = s.lieut[i];
+  openPerson(lieutNpc(s, l));
+  if (!l.alive) return;
+  const own = citiesOf("player");
+  const opts = [];
+  if (l.gov || l.role === "adv") opts.push(["field", "กลับมาเป็นแม่ทัพร่วมรบ"]);
+  if (l.role !== "adv") opts.push(["adv", "ตั้งเป็นเสนาธิการ (กลยุทธ์ +)"]);
+  own.filter(c => c.id !== l.gov && !s.lieut.some(x => x.alive && x.gov === c.id)).slice(0, 6).forEach(c => opts.push(["gov:" + c.id, `ตั้งเป็นเจ้าเมือง${cn(c.id)}`]));
+  if (!opts.length) return;
+  const box = document.createElement("div");
+  box.innerHTML = `<div class="sec-h" style="margin-top:12px">แต่งตั้งตำแหน่ง</div><div class="appoint">${opts.map(([k, t]) => `<button class="btn" data-ap="${k}">${esc(t)}</button>`).join("")}</div>`;
+  $("pX").before(box);
+  box.querySelectorAll("[data-ap]").forEach(b => b.onclick = () => {
+    const k = b.dataset.ap;
+    if (s.lieut.some(x => x.role === "adv") && k === "adv") s.lieut.forEach(x => { if (x.role === "adv") x.role = null; });
+    l.gov = null; l.role = null;
+    if (k === "adv") { l.role = "adv"; }
+    else if (k.startsWith("gov:")) l.gov = k.slice(4);
+    Sound.tap(); toast(`${l.name} รับตำแหน่ง${lieutPos(s, l)}`); saveGame(s);
+    $("ov").classList.add("hidden"); renderGame();
+  });
+}
+/* เสนาธิการช่วยเพิ่มโอกาสในตัวเลือกที่ใช้กลยุทธ์ */
+const advisorBonus = s => { const a = (s.lieut || []).find(l => l.alive && l.role === "adv"); return a && a.st ? Math.round(((a.st.strategy || a.st.politics || 50) - 50) / 5) : 0; };
+
+/* ---------- คลังสมบัติ ---------- */
+function armoryHTML(s) {
+  const W_ = arsenalItems(s, "weapon"), H_ = arsenalItems(s, "horse"), T_ = s.tomes.filter(Boolean);
+  const item = (r, cur) => `<button class="relic arm ${cur ? "on" : ""}" data-eq="${r.id}"><span>${relicIco(r)}${esc(r.name)}${cur ? " <em>· ใช้อยู่</em>" : ""}<small>${esc(Object.entries(r.bonus || {}).map(([k, v]) => STAT_META[k].name + " +" + v).join(" · "))}</small></span><span></span></button>`;
+  const sec = (h, arr, curId, empty) => `<div class="sec-h" style="margin-top:10px">${h} <small>${arr.length} ชิ้น</small></div>` + (arr.length ? arr.map(r => item(r, r.id === curId)).join("") : `<div class="relic empty"><span>${empty}</span><span></span></div>`);
+  return `<div class="relic"><span>พลังรบจากคลังอาวุธและม้า</span><span><b>+${Math.round(arsenalPower(s) * 100)}%</b></span></div>` +
+    sec("อาวุธ", W_, s.weapon && s.weapon.id, "ยังไม่มีอาวุธ หาได้จากเหตุการณ์ ร้านช่างตีเหล็ก หรือของที่ยึดได้หลังศึก") +
+    sec("ม้าศึก", H_, s.horse && s.horse.id, "ยังไม่มีม้า ซื้อได้ที่ตลาดม้าหรือได้รับเป็นรางวัล") +
+    sec("ตำรา", T_, null, "ยังไม่มีตำรา");
+}
+function bindArmory() {
+  document.querySelectorAll("#fGear [data-eq]").forEach(b => b.onclick = () => {
+    const r = RELICS.find(x => x.id === b.dataset.eq); if (!r || r.type === "tome") return;
+    if (r.type === "weapon") S.weapon = r; else S.horse = r;
+    Sound.tap(); toast(`ใช้ ${r.name}`); saveGame(S); renderGame();
+  });
+}
+const unownedShop = (s, type) => RELICS.filter(r => r.type === type && !hasRelic(s, r.id) && (r.shop || R() < 0.25));
 
 /* ===================================================================
  * AUDIO — เสียงสังเคราะห์ด้วย WebAudio (ไม่ต้องโหลดไฟล์)
@@ -4724,7 +4864,6 @@ function resHTML(s) {
   if (s.clique) h += `<div class="relic"><span>ขั้วอำนาจ</span><span>${CLIQUE_N[s.clique]}</span></div>`;
   if (s.gov) h += `<div class="relic"><span>เมืองที่ปกครอง: ${esc(s.gov.name)}</span><span>ประชากร ${fmt(s.gov.pop)} · สงบ ${s.gov.order}</span></div>`;
   if (s.rival) h += `<div class="relic"><span>คู่ปรับ: ${esc(s.rival.name)}</span><span>${s.rival.power > 0 ? "อำนาจ " + s.rival.power : s.flags.rivalPeace ? "สงบศึกแล้ว" : "พ่ายแพ้แล้ว"}</span></div>`;
-  if (s.lieut.length) h += `<div class="sec-h" style="margin-top:12px">รองแม่ทัพคู่ใจ</div>` + s.lieut.map(l => `<div class="relic ${l.alive ? "" : "empty"}"><span>${esc(l.name)}</span><span>${esc(l.kind)}${l.alive ? "" : " · สิ้นชีพ"}</span></div>`).join("");
   return h;
 }
 function advance(skip) {
@@ -4854,7 +4993,7 @@ function endLife() {
   $("endEp").textContent = r.epithet;
   $("endPf").innerHTML = Portrait.draw(portraitSpec(s, Math.max(s.age, 18)));
   const deedLine = s.deeds.length ? `วีรกรรมที่ถูกจารึกคือ ${s.deeds.slice(0, 3).join(" · ")}` : `ตลอดชีวิตรับราชการในฐานะ${rankLabel(s)} แห่ง${s.faction}`;
-  const relics = [s.weapon && s.weapon.name].concat(s.tomes.map(t => t.name)).filter(Boolean);
+  const relics = arsenalItems(s).map(r => r.name).concat(s.tomes.map(t => t.name)).filter(Boolean);
   $("endEpi").textContent = `พงศาวดารจารึกไว้ว่า ${s.name} ถือกำเนิด ค.ศ. ${s.birthYear} ณ ${s.city} ในฐานะ${s.className} ${deedLine}${relics.length ? ` มีของคู่กายคือ ${relics.join(" และ ")}` : ""}${s.peakTroops >= 1000 ? ` เคยบัญชาทัพสูงสุด ${fmt(s.peakTroops)} นาย` : ""}${s.peakLands ? ` ครองดินแดน ${s.peakLands} หัวเมือง` : ""} ท้ายที่สุด${s.deathCause}`;
   $("endMetrics").innerHTML = [
     ["ยศสูงสุด", (RANKS[s.path] || RANKS.martial)[Math.min(7, s.peakRank)]], ["สังกัดสุดท้าย", s.faction],
@@ -4895,7 +5034,7 @@ function renderArchive() {
   if (arcTab === "heroes") h = `<div class="heroes">${Object.keys(Portrait.HEROES).map(k => `<div class="h ${meta.heroes[k] ? "" : "lock"}">${pf(heroSpec(k))}<div style="margin-top:4px;font-weight:600">${meta.heroes[k] ? Portrait.HEROES[k].name : "???"}</div></div>`).join("")}</div>`;
   if (arcTab === "endings") h = `<div class="grid-list">${Object.keys(ENDING_DEFS).map(k => `<div class="it ${meta.endings[k] ? "" : "lock"}"><h4>${meta.endings[k] ? ENDING_DEFS[k].title : "ฉากจบที่ " + k}</h4><p>${ENDING_DEFS[k].desc}</p></div>`).join("")}</div>`;
   if (arcTab === "talents") h = `<div class="grid-list">${TALENTS.map(t => `<div class="it ${meta.talents[t.id] ? "" : "lock"}"><h4>${esc(t.name)} <small style="color:var(--ink3);font-weight:400">${t.cat}</small></h4><p>${esc(t.desc)}</p></div>`).join("")}</div>`;
-  if (arcTab === "relics") h = `<div class="grid-list">${RELICS.map(r => `<div class="it ${meta.relics[r.id] ? "" : "lock"}"><h4>${r.type === "weapon" ? "🗡" : "📜"} ${esc(r.name)}</h4><p>${esc(r.desc)}</p></div>`).join("")}</div>`;
+  if (arcTab === "relics") h = `<div class="grid-list">${RELICS.map(r => `<div class="it ${meta.relics[r.id] ? "" : "lock"}"><h4>${relicIco(r)}${esc(r.name)}</h4><p>${esc(r.desc)}</p></div>`).join("")}</div>`;
   if (arcTab === "src") h = `<p style="font-size:14.5px">เหตุการณ์ในเกมอิงปี ค.ศ. ตามพงศาวดาร ตั้งแต่ขันทีกุมอำนาจ (ค.ศ. 168) จนถึงการรวมแผ่นดินของราชวงศ์จิ้น (ค.ศ. 280) เรื่องราวของตัวละครผู้เล่นเป็นเรื่องแต่ง</p><div class="grid-list">${TIMELINE_SOURCES.map(x => `<a class="it" style="color:inherit;text-decoration:none" href="${x.url}" target="_blank" rel="noopener"><h4>${esc(x.title)} ↗</h4></a>`).join("")}</div>`;
   $("arcBody").innerHTML = h;
   show("vArchive");
@@ -5040,10 +5179,11 @@ function renderGame() {
   // แท็บตัวละคร
   $("fRes").innerHTML = resHTML(s); $("fResN").textContent = resSummary(s);
   $("fStats").innerHTML = `<div class="stats">${statRows(s)}</div>`;
-  const rel = [s.weapon ? `<div class="relic"><span>🗡 ${esc(s.weapon.name)}</span><span>อาวุธ</span></div>` : `<div class="relic empty"><span>— ยังไม่มีอาวุธคู่กาย</span><span>อาวุธ</span></div>`];
-  for (let i = 0; i < 2; i++) rel.push(s.tomes[i] ? `<div class="relic"><span>📜 ${esc(s.tomes[i].name)}</span><span>ตำรา ${i + 1}</span></div>` : `<div class="relic empty"><span>— ช่องตำราว่าง</span><span>ตำรา ${i + 1}</span></div>`);
-  $("fGear").innerHTML = rel.join("") + `<div class="sec-h" style="margin-top:14px">พรสวรรค์ <small>${s.talents.length} อย่าง</small></div><div class="tal-list">${talentHTML(s)}</div>`;
-  $("fGearN").textContent = `${(s.weapon ? 1 : 0) + s.tomes.length}/3 · พรสวรรค์ ${s.talents.length}`;
+  $("fGear").innerHTML = armoryHTML(s) + `<div class="sec-h" style="margin-top:14px">พรสวรรค์ <small>${s.talents.length} อย่าง</small></div><div class="tal-list">${talentHTML(s)}</div>`;
+  $("fGearN").textContent = `อาวุธ ${arsenalItems(s, "weapon").length} · ม้า ${arsenalItems(s, "horse").length} · ตำรา ${s.tomes.length}`;
+  bindArmory();
+  $("fLieut").innerHTML = lieutsHTML(s); bindLieuts();
+  $("fLieutN").textContent = (s.lieut || []).filter(l => l.alive).length + " คน";
   const fam = [];
   if (s.spouse) fam.push(`<div class="relic"><span>คู่ชีวิต: ${esc(s.spouse.name)}</span><span>${s.spouse.type === "political" ? "แต่งงานการเมือง" : "แต่งงานด้วยรัก"}</span></div>`);
   s.children.forEach(c => fam.push(`<div class="relic"><span>${c.gender === "M" ? "บุตรชาย" : "บุตรสาว"} ${esc(c.name)}</span><span>อายุ ${Math.max(0, s.year - c.born)} ปี</span></div>`));
