@@ -393,6 +393,10 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
 .kid .kn b{font-family:var(--serif);font-size:15.5px}
 .kid .kn span{font-size:12.5px;color:var(--ink3)}
 .kid p{margin:3px 0 0;font-size:14px;line-height:1.6}
+
+/* ยอดผู้เล่นหน้าแรก */
+.play-count{text-align:center;font-size:13.5px;color:var(--ink3);margin:-4px 0 14px}
+.play-count b{color:var(--red);font-family:var(--serif);font-weight:700}
 </style>
 </head>
 <body>
@@ -413,6 +417,7 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
   </div>
   <h1 class="title-th" style="text-align:center">ลิขิตชะตาพันปี</h1>
   <p class="title-sub" style="text-align:center">เกิดใหม่หนึ่งชีวิตในแผ่นดินที่ลุกเป็นไฟ ค.ศ. 168–280 เลือกนาย ทอยชะตา ดวลขุนพล และสร้างตระกูลของคุณให้ถูกจารึกในพงศาวดาร</p>
+  <p class="play-count hidden" id="playCount"></p>
   <div class="menu">
     <button class="btn primary" id="btnContinue"><span>เล่นต่อ</span><span class="r"></span></button>
     <button class="btn red" id="btnNew"><span>จุติชาติใหม่</span><span class="r">เลือกยุคและความยาก</span></button>
@@ -5664,6 +5669,38 @@ function kidsEpilogue(s, heir) {
 }
 
 /* ===================================================================
+ * STATS — นับยอดผู้เล่นด้วย GoatCounter (pigman50.goatcounter.com)
+ * นับ: เข้าเว็บ (อัตโนมัติ) · เริ่มชีวิตใหม่ (life-start) · เล่นจบ (life-end/<ฉากจบ>) · เล่นต่อเป็นทายาท (heir)
+ * แสดงจำนวนผู้เล่นที่หน้าแรก (GoatCounter นับเป็นคน ไม่ใช่จำนวนครั้ง และแคชยอดไว้ราว 4 ชั่วโมง)
+ * ถ้ายังน้อยกว่า STATS_MIN หรือดึงไม่ได้ (เช่น เบราว์เซอร์บล็อกตัวนับ) จะซ่อนไว้เฉย ๆ
+ * ไม่เก็บข้อมูลส่วนตัว ไม่ใช้คุกกี้ และไม่มีผลกับการเล่นแม้ GoatCounter ล่มหรือถูกบล็อก
+ * =================================================================== */
+const STATS_SITE = "https://pigman50.goatcounter.com";
+const STATS_MIN = 30;
+const Stats = {
+  live() { return /github\.io$/.test(location.hostname); },   // นับเฉพาะเว็บจริง ไม่นับตอนทดสอบ
+  count(path, title) {
+    try { if (this.live() && window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path, title: title || path, event: true }); } catch (e) {}
+  },
+  async total(path) {
+    const r = await fetch(`${STATS_SITE}/counter/${encodeURIComponent(path)}.json`, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    return parseInt(String(j.count || "0").replace(/[^\d]/g, ""), 10) || 0;
+  },
+  async show() {
+    const el = document.getElementById("playCount");
+    if (!el || !this.live()) return;
+    try {
+      const players = await this.total("life-start");
+      if (players < STATS_MIN) return;
+      el.innerHTML = `มีผู้จุติลงยุคสามก๊กแล้ว <b>${players.toLocaleString("th-TH")}</b> คน`;
+      el.classList.remove("hidden");
+    } catch (e) { /* ดึงยอดไม่ได้ ก็ซ่อนไว้ */ }
+  }
+};
+
+/* ===================================================================
  * AUDIO — เสียงสังเคราะห์ด้วย WebAudio (ไม่ต้องโหลดไฟล์)
  * กลองศึก, ฆ้อง, ทอยเต๋า, ดีดพิณกู่เจิงเป็นดนตรีพื้นหลัง
  * =================================================================== */
@@ -5892,6 +5929,7 @@ function startLife(opt) {
   Sound.unlock();
   S = newCharacter(opt);
   saveMeta();
+  Stats.count(opt && opt.heir ? "heir" : "life-start", opt && opt.heir ? "เล่นต่อเป็นทายาท" : "เริ่มชีวิตใหม่");
   renderBirth();
 }
 function statRows(s) {
@@ -6145,6 +6183,7 @@ function openDuel(ev, c) {
 function endLife() {
   lastResult = finish(S);
   const s = S, r = lastResult;
+  Stats.count("life-end/" + r.endingId, "เล่นจบ: " + ENDING_DEFS[r.endingId].title);
   Sound.gong();
   $("endGrade").textContent = `${r.grade} · ${r.score} คะแนน`;
   $("endTitle").textContent = ENDING_DEFS[r.endingId].title;
@@ -6255,6 +6294,7 @@ function boot() {
   loadMeta();
   bind();
   renderTitle();
+  Stats.show();
   if (meta.lives === 0 && !localStorage.getItem("samkok_seen_howto")) { try { localStorage.setItem("samkok_seen_howto", "1"); } catch (e) {} setTimeout(() => $("btnHow").click(), 400); }
 }
 
@@ -6607,5 +6647,6 @@ function fastForward() {
 
 boot();
 })();</script>
+<script data-goatcounter="https://pigman50.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </body>
 </html>
