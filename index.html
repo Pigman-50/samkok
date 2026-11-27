@@ -307,6 +307,12 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
 .mapsvg .city .hit{fill:transparent}
 .mapsvg .city .seal{stroke:#1c1713;stroke-width:1.8}
 .mapsvg .city .ch{fill:#fbf3e3;text-anchor:middle;font-family:var(--cjk);font-weight:900;pointer-events:none}
+.mapsvg .city .ch.th{font-family:inherit;font-weight:800;letter-spacing:-.3px}
+.mapsvg .city .seal.mine{stroke:#e8c35a;stroke-width:2}
+.fac-legend{display:flex;flex-wrap:wrap;gap:4px 10px;margin:8px 0 0;font-size:12px;color:var(--ink2)}
+.fac-legend .lg{display:inline-flex;align-items:center;gap:4px}
+.fac-legend .lg i{width:12px;height:12px;border-radius:2px;border:1px solid rgba(0,0,0,.35);display:inline-block}
+.fac-legend small{color:var(--ink3)}
 .mapsvg .city .nm{text-anchor:middle;font-family:var(--body);font-weight:700;font-size:13px;fill:#1c1713;paint-order:stroke;stroke:#efe5cf;stroke-width:4px;stroke-linejoin:round}
 .mapsvg .city .ring{fill:none;stroke:#a8241c;stroke-width:3;stroke-dasharray:6 3}
 .mapsvg .city .flag{fill:#a8241c;stroke:#1c1713;stroke-width:1.5}
@@ -333,6 +339,7 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
 .nb i{width:10px;height:10px;display:inline-block;border:1px solid var(--ink)}
 .city-h{display:flex;gap:12px;align-items:center;margin:4px 0 12px}
 .cseal{width:44px;height:44px;display:grid;place-items:center;color:#fbf3e3;font-family:var(--cjk);font-weight:900;font-size:24px;border:1.5px solid var(--ink);flex:none}
+.cseal.th{font-family:inherit;font-size:13px;font-weight:800;line-height:1.1;text-align:center;padding:2px}
 .cgrid{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line2)}
 .cgrid div{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px;gap:8px}
 .cgrid div:nth-child(odd){padding-right:12px}
@@ -476,7 +483,8 @@ details.fold>summary small{font-family:var(--body);font-weight:400;font-size:12.
   <div class="tabs gtabs" id="gTabs"></div>
   <div id="p_map">
     <div class="map-wrap" id="mapWrap"></div>
-    <div class="map-legend">แตะเมืองเพื่อดูข้อมูล · ธงแดงคือที่อยู่ของคุณ</div>
+    <div class="fac-legend" id="mapLegend"></div>
+    <div class="map-legend">แตะเมืองเพื่อดูข้อมูล · ธงแดงคือที่อยู่ของคุณ · ตราดำขอบทองคือเมืองของคุณ</div>
     <div id="hereCard"></div>
   </div>
   <div id="p_char" class="hidden">
@@ -5042,6 +5050,465 @@ HAREM_CARDS.forEach(e => { e.flavor = true; e.family = true; });
 POOL_EVENTS.push(...HAREM_CARDS);
 
 /* ===================================================================
+ * CARDS 10 — อีเวนต์ตามแผนที่ + การทูต
+ * GEO_WARS: ศึกประวัติศาสตร์ "ตามพิกัด" ถ้าแคว้นของผู้เล่น (หรือเมืองที่คนไร้สังกัดยืนอยู่) อยู่ใกล้สนามรบ
+ *           จะเจอฉบับมุมมองของตัวเองแทนฉบับปกติ · ช่วยฝ่ายที่แพ้ในประวัติศาสตร์แล้วแข็งพอ → พลิกประวัติศาสตร์ได้
+ * MAP_CARDS: เหตุการณ์ที่ดึงชื่อเมือง ก๊กเพื่อนบ้าน และค่าในเมืองจริงจากแผนที่
+ * =================================================================== */
+
+/* ระยะ (จำนวนทอดถนน) จากแคว้นผู้เล่น/เมืองปัจจุบัน ไปยังชุดเมือง */
+function hopDist(fromIds, toIds, max) {
+  const goal = new Set(toIds); let fr = fromIds.slice(), seen = new Set(fr);
+  for (let d = 0; d <= (max || 4); d++) {
+    if (fr.some(id => goal.has(id))) return d;
+    const nx = []; fr.forEach(id => ROADS[id].forEach(n => { if (!seen.has(n)) { seen.add(n); nx.push(n); } })); fr = nx;
+  }
+  return 99;
+}
+const homeIds = s => { const m = ownCities().map(c => c.id); return m.length ? m : [s.loc]; };
+const geoDist = (s, site) => hopDist(homeIds(s), site, 4);
+const fN = (s, f) => factionName(f, s.year), fL = (s, f) => factionLeader(f, s.year);
+const realmTroops = s => playerPower(s);
+
+/* ยึดเมืองโดยไม่ผ่านหน้าศึก (เชิญ / แปรพักตร์ / ฉวยโอกาส) */
+function takeCity(s, cid, res, how) {
+  const c = W.cities[cid], from = c.owner;
+  foundRealm(s);
+  c.owner = "player"; c.touched = true;
+  const g = Math.min(s.troops, Math.max(150, Math.round(s.troops * 0.12)));
+  c.troops = Math.max(c.troops > 0 ? Math.round(c.troops * 0.5) : 0, g); s.troops = Math.max(0, s.troops - g);
+  c.order = clamp(c.order - 5, 0, 100);
+  if (W.hold) delete W.hold[cid];
+  addNews(s.year, `${W.playerName} ได้${CITY[cid].name}${how ? ` (${how})` : ""}`, from !== "none");
+  (res && res.extra || []).push(`ได้เมือง${CITY[cid].name} · แคว้นของคุณมี ${ownCities().length} เมือง`);
+  syncFaction(s);
+}
+function joinLord(s, f, res) {
+  s.lord = f; s.rank = Math.max(s.rank, s.fame >= 40 ? 3 : 2);
+  s.path = s.stats.strategy + s.stats.politics > s.stats.martial + s.stats.command ? "civil" : "martial";
+  s.peakRank = Math.max(s.peakRank, s.rank);
+  if (typeof sysOnRank === "function") sysOnRank(s);
+  syncFaction(s);
+  (res && res.extra || []).push(`เข้าสังกัด${fN(s, f)} ในตำแหน่ง “${rankLabel(s)}”`);
+}
+
+/* ================= ศึกประวัติศาสตร์ตามพิกัด ================= */
+const GEO_WARS = [
+  { g: "yellow", y: [184, 185], site: ["ye", "np", "py", "rn", "cl"], A: "han", B: "yt", win: "A", name: "กบฏโพกผ้าเหลือง",
+    title: "ผ้าเหลืองลุกฮือทั่วกิจิ๋ว",
+    body: s => `กองทัพชาวนาโพกผ้าเหลืองนับแสนของเตียวก๊กลุกฮือทั่วกิจิ๋วและอิจิ๋ว แผ่นดินรอบ${W.playerName || "เมืองของคุณ"}ลุกเป็นไฟ ราชสำนักฮั่นออกประกาศให้หัวเมืองยกทัพมาช่วยปราบ ขณะที่ผู้นำผ้าเหลืองก็ส่งคนมาชวนให้ร่วม “ฟ้าเหลืองแทนฟ้าน้ำเงิน”`,
+    flip: s => holdHistory(s, "yt", ["ye", "np", "py"], 192), flipTxt: "ทัพหลวงถูกตีแตกที่กิจิ๋ว ผ้าเหลืองตั้งมั่นได้นานกว่าในประวัติศาสตร์หลายปี", winTxt: "ผ้าเหลืองถูกปราบลงในที่สุดตามที่ประวัติศาสตร์จารึก" },
+  { g: "hulao", y: [190, 191], site: ["ly", "xc", "cl", "ca"], A: "ys", B: "dz", win: "B", name: "ศึกพันธมิตรปราบตั๋งโต๊ะ",
+    title: "สิบแปดหัวเมืองตั้งค่ายหน้าด่านเฮาโลก๋วน",
+    body: s => `อ้วนเสี้ยวเป็นแม่ทัพใหญ่ของพันธมิตรสิบแปดหัวเมืองที่มาตั้งค่ายหน้าด่านเฮาโลก๋วน ตั๋งโต๊ะเตรียมเผาลกเอี๋ยงแล้วกวาดต้อนราษฎรไปเตียงอัน ทั้งสองฝ่ายต่างส่งคนมาหาคุณ เพราะ${W.playerName || "กำลังของคุณ"}อยู่ติดสนามรบ`,
+    flip: s => holdHistory(s, "ys", ["ly"], 196), flipTxt: "ทัพพันธมิตรตีถึงลกเอี๋ยงก่อนไฟจะลาม ตั๋งโต๊ะถอยหนีไปโดยไม่ทันเผาเมืองหลวง", winTxt: "ตั๋งโต๊ะเผาลกเอี๋ยงแล้วย้ายเมืองหลวงไปเตียงอัน ส่วนพันธมิตรก็แตกคอกันเองตามประวัติศาสตร์" },
+  { g: "xiapi", y: [198, 199], site: ["xp", "sc", "cl"], A: "cc", B: "lu", win: "A", name: "ศึกแห้ฝือ",
+    title: "โจโฉทดน้ำท่วมเมืองแห้ฝือ",
+    body: s => `โจโฉล้อมลิโป้ไว้ในแห้ฝือ แล้วขุดคลองทดน้ำท่วมเมือง ลิโป้ส่งทูตลอบออกมาขอกำลังจากคุณ ส่วนโจโฉก็ส่งสาส์นมาขอให้คุณปิดทางหนีของลิโป้`,
+    flip: s => holdHistory(s, "lu", ["xp"], 205), flipTxt: "ทัพหนุนของคุณตีทำนบแตก น้ำไหลกลับเข้าค่ายโจโฉ ลิโป้รอดจากหอประตูขาวและยังครองแห้ฝือต่อไป", winTxt: "แห้ฝือแตก ลิโป้ถูกประหารที่หอประตูขาวตามประวัติศาสตร์" },
+  { g: "guandu", y: [200, 201], site: ["cl", "py", "xc", "ye"], A: "cc", B: "ys", win: "A", name: "ศึกกัวต๋อ",
+    title: "ทัพเหนือกับทัพใต้ประจันกันที่กัวต๋อ",
+    body: s => `อ้วนเสี้ยวยกทัพหนึ่งแสนลงใต้ โจโฉมีทหารไม่ถึงสามหมื่นตั้งรับที่กัวต๋อ สนามรบอยู่ห่างชายแดน${W.playerName || "ของคุณ"}ไม่กี่วัน ฝ่ายใดชนะจะครองภาคเหนือทั้งหมด และหันมามองแคว้นคุณเป็นรายต่อไป`,
+    flip: s => holdHistory(s, "ys", ["ye", "np", "bing", "bh", "bp", "yz", "py", "cl"], 212), flipTxt: "ทัพของคุณรักษาคลังเสบียงอูเฉาไว้ได้ ทัพโจโฉอดอยากจนต้องถอย อ้วนเสี้ยวยังครองภาคเหนือต่อไปอีกหลายปี", winTxt: "โจโฉเผาคลังอูเฉาแล้วพลิกชนะตามประวัติศาสตร์ ภาคเหนือตกเป็นของโจโฉ" },
+  { g: "chibi", y: [208, 209], site: ["jx", "jl", "cs", "cs2", "xy"], A: "cc", B: "sun", win: "B", name: "ศึกผาแดง",
+    title: "เรือรบแปดสิบหมื่นล่องลงแม่น้ำแยงซี",
+    body: s => `โจโฉยกทัพเรือมหึมาล่องแม่น้ำแยงซี ประกาศว่าจะ “ไปล่าสัตว์กับซุนกวนที่กังตั๋ง” ซุนกวนกับเล่าปี่จับมือกันต้าน สนามรบอยู่ติดชายแดน${W.playerName || "ของคุณ"} ทั้งสองฝ่ายต่างส่งทูตมาหา`,
+    flip: s => holdHistory(s, "cc", ["jx", "jl", "cs", "wl", "ll", "gy"], 220), flipTxt: "ทัพของคุณเผยแผนเผาเรือของจิวยี่ก่อนลมตะวันออกจะพัด กองเรือโจโฉแก้โซ่ทันแล้วยึดเกงจิ๋วได้ทั้งแคว้น", winTxt: "ลมตะวันออกพัดมาตามคำของขงเบ้ง กองเรือโจโฉมอดไหม้ที่ผาแดงตามประวัติศาสตร์" },
+  { g: "tongguan", y: [211, 212], site: ["ca", "tsh", "an", "ly"], A: "cc", B: "ma", win: "A", name: "ศึกด่านตงก๋วน",
+    title: "ม้าเฉียวยกทัพม้าตะวันตกแก้แค้นให้บิดา",
+    body: s => `ม้าเฉียวกับหันซุยยกทัพม้าเสเหลียงเข้าตีด่านตงก๋วน โจโฉยกทัพมารับเอง ชายแดน${W.playerName || "ของคุณ"}อยู่ใกล้สนามรบ ม้าเฉียวขอให้คุณตีขนาบหลังทัพโจโฉ`,
+    flip: s => holdHistory(s, "ma", ["ca", "tsh", "an", "ww"], 222), flipTxt: "ทัพของคุณเผยแผนจดหมายยุแยงของกาเซี่ยง ม้าเฉียวกับหันซุยไม่แตกคอกัน ตระกูลม้ายังครองแดนตะวันตกต่อไป", winTxt: "แผนจดหมายลบคำของกาเซี่ยงทำให้ม้าเฉียวกับหันซุยแตกคอ ทัพตะวันตกพ่ายตามประวัติศาสตร์" },
+  { g: "hefei", y: [214, 216], site: ["hf", "sc", "lj"], A: "cc", B: "sun", win: "A", name: "ศึกหับป๋า",
+    title: "ซุนกวนสิบหมื่นล้อมหับป๋า",
+    body: s => `ซุนกวนยกทัพสิบหมื่นมาล้อมหับป๋า ซึ่งมีเตียวเลี้ยวรักษาอยู่เพียงเจ็ดพัน เมืองนี้อยู่ติดชายแดน${W.playerName || "ของคุณ"} ถ้าหับป๋าแตก ทัพง่อจะเปิดทางขึ้นเหนือได้`,
+    flip: s => holdHistory(s, "sun", ["hf", "sc"], 230), flipTxt: "ทัพของคุณตัดทางถอยของเตียวเลี้ยว หับป๋าแตก ทัพง่อยึดแนวแม่น้ำไหวได้เป็นครั้งแรก", winTxt: "เตียวเลี้ยวนำทหารแปดร้อยตีฝ่าค่ายซุนกวนจนแตกกระเจิง หับป๋ารอดตามประวัติศาสตร์" },
+  { g: "hanzhong", y: [218, 219], site: ["hz", "zt", "tsh"], A: "lb", B: "cc", win: "A", name: "ศึกชิงฮันต๋ง",
+    title: "เล่าปี่กับโจโฉชิงฮันต๋ง",
+    body: s => `เล่าปี่ยกทัพจากเสฉวนมาชิงฮันต๋ง โจโฉยกทัพมาป้องกันเอง ฮองตงรอโอกาสอยู่บนเขาเตงกุนสัน ฮันต๋งเป็นประตูเชื่อมเหนือใต้ และอยู่ห่างแคว้นคุณไม่ไกล`,
+    flip: s => holdHistory(s, "cc", ["hz"], 240), flipTxt: "ทัพของคุณช่วยแฮหัวเอี๋ยนรักษาเขาเตงกุนสันไว้ได้ ฮันต๋งยังเป็นของวุย เล่าปี่ขึ้นเป็นอ๋องฮันต๋งไม่ได้", winTxt: "ฮองตงฟันแฮหัวเอี๋ยนที่เขาเตงกุนสัน เล่าปี่ได้ฮันต๋งตามประวัติศาสตร์" },
+  { g: "fancheng", y: [219, 220], site: ["xy", "jl", "xye", "wan"], A: "lb", B: "cc", win: "B", name: "ศึกปราสาทฮวนเสีย",
+    title: "กวนอูทดน้ำท่วมเจ็ดทัพ",
+    body: s => `กวนอูยกทัพจากเกงจิ๋วขึ้นเหนือ ทดน้ำท่วมเจ็ดทัพของอิกิ๋มจนแตก ทั่วแผ่นดินสะท้าน แต่ข่าวลือว่าลิบองแห่งง่อกำลังแต่งทหารเป็นพ่อค้าลอบข้ามแม่น้ำ ทั้งสองฝ่ายต่างส่งคนมาหาคุณ`,
+    flip: s => holdHistory(s, "lb", ["jl", "wl", "ll", "xy"], 235), flipTxt: "ทัพของคุณเตือนและช่วยรักษากังเหลงไว้ได้ แผนชุดขาวข้ามแม่น้ำของลิบองล้มเหลว กวนอูรอดชีวิตและยังครองเกงจิ๋ว", winTxt: "ลิบองชุดขาวข้ามแม่น้ำยึดเกงจิ๋ว กวนอูเสียเมืองแล้วถูกจับที่เมืองเป๊กเสียตามประวัติศาสตร์" },
+  { g: "yiling", y: [221, 223], site: ["jl", "wl", "jz", "zt"], A: "lb", B: "sun", win: "B", name: "ศึกอิเหลง",
+    title: "ค่ายเจ็ดร้อยลี้ริมชายแดนแคว้นคุณ",
+    body: s => `เล่าปี่ยกทัพแก้แค้นให้กวนอู ตั้งค่ายเรียงยาวเจ็ดร้อยลี้ในป่า ลกซุนแม่ทัพหนุ่มของง่อนิ่งรอฤดูร้อน ค่ายทั้งสองฝ่ายอยู่ไม่ไกลจากชายแดน${W.playerName || "ของคุณ"}`,
+    flip: s => holdHistory(s, "lb", ["jl", "wl", "ll"], 240), flipTxt: "ทัพของคุณเตือนเล่าปี่ให้ย้ายค่ายออกจากป่าก่อนไฟจะมา ลกซุนเผาค่ายว่าง จ๊กได้เกงจิ๋วคืน", winTxt: "ลกซุนเผาค่ายเจ็ดร้อยลี้ เล่าปี่แตกพ่ายหนีไปเป๊กเต้เสียตามประวัติศาสตร์" },
+  { g: "jieting", y: [227, 228], site: ["tsh", "an", "hz"], A: "lb", B: "cc", win: "B", name: "ศึกเกเต๋ง",
+    title: "ขงเบ้งยกทัพออกกิสาน",
+    body: s => `ขงเบ้งยกทัพออกกิสาน สามหัวเมืองแถบเทียนซุยยอมสวามิภักดิ์ บะเจ๊กได้รับมอบให้รักษาด่านเกเต๋ง ส่วนสุมาอี้กับเตียวคับก็เร่งทัพมาจากตะวันออก ชายแดน${W.playerName || "ของคุณ"}อยู่ติดเส้นทางเดินทัพ`,
+    flip: s => holdHistory(s, "lb", ["tsh", "an"], 245), flipTxt: "ทัพของคุณยึดแหล่งน้ำที่เชิงเขาเกเต๋งไว้ได้ เตียวคับตีไม่ผ่าน จ๊กได้แดนเหลียงจิ๋ว", winTxt: "บะเจ๊กตั้งค่ายบนเขาจนถูกตัดน้ำ เกเต๋งแตก ขงเบ้งต้องถอยทัพตามประวัติศาสตร์" },
+  { g: "wuzhang", y: [234, 234], site: ["ca", "tsh", "hz"], A: "lb", B: "cc", win: "B", name: "ศึกทุ่งอู่จั้ง",
+    title: "ดาวตกที่ทุ่งอู่จั้ง",
+    body: s => `ขงเบ้งตั้งค่ายที่ทุ่งอู่จั้งเป็นครั้งที่หก สุมาอี้ไม่ยอมออกรบแม้ถูกส่งชุดสตรีมาเยาะเย้ย ข่าวลือว่าอัครเสนาบดีจ๊กป่วยหนัก ทั้งสองฝ่ายต่างจับตาว่าแคว้นข้างเคียงอย่างคุณจะเข้ากับใคร`,
+    flip: s => holdHistory(s, "lb", ["ca", "tsh"], 250), flipTxt: "ทัพของคุณบุกตีค่ายสุมาอี้จนต้องออกรบ จ๊กชนะศึกใหญ่ ได้เตียงอันก่อนขงเบ้งจะสิ้นใจ", winTxt: "ขงเบ้งสิ้นใจที่ทุ่งอู่จั้ง ทัพจ๊กถอยกลับตามประวัติศาสตร์" },
+  { g: "shufall", y: [263, 263], site: ["cd", "zt", "hz", "jz"], A: "cc", B: "lb", win: "A", name: "วุยตีจ๊ก",
+    title: "เตงงายลอบข้ามภูเขาอิมเผง",
+    body: s => `จงโฮยยกทัพใหญ่ตีด่านเกียมโก๊ะ เกียงอุยรักษาไว้แน่น ขณะที่เตงงายพาทหารห่อตัวด้วยผ้าห่มกลิ้งลงหน้าผาอิมเผง ตรงไปเซงโต๋ จ๊กใกล้ถึงวันสุดท้าย และแคว้นของคุณอยู่ติดเส้นทางนั้นพอดี`,
+    flip: s => holdHistory(s, "lb", ["zt", "cd", "jz", "nz", "hz"], 290), flipTxt: "ทัพของคุณดักเตงงายที่ปากทางอิมเผง ทหารที่อ่อนล้าจากการข้ามเขาแตกพ่าย จ๊กรอดจากการล่มสลาย", winTxt: "เล่าเสี้ยนออกจากเซงโต๋ไปยอมจำนนต่อเตงงาย จ๊กก๊กสิ้นสุดตามประวัติศาสตร์" },
+  { g: "fall", y: [279, 280], site: ["jy", "wu", "jx", "lj", "kj"], A: "jin", B: "sun", win: "A", name: "จิ้นตีง่อ",
+    title: "เรือรบจิ้นล่องจากเสฉวน",
+    body: s => `อองจุ้นต่อเรือรบในเสฉวนมาเจ็ดปี บัดนี้ล่องลงแม่น้ำแยงซี ตัดโซ่เหล็กที่ง่อขึงขวางไว้ด้วยแพไฟ ซุนโฮถูกขุนนางชิงชังทั้งราชสำนัก ง่อเป็นแคว้นสุดท้ายที่ยืนขวางการรวมแผ่นดิน`,
+    flip: s => holdHistory(s, "sun", ["wu", "kj", "jy", "lj", "cs2"], 300), flipTxt: "ทัพของคุณเผากองเรืออองจุ้นที่ปากแม่น้ำ จิ้นต้องถอยทัพ ง่อยังยืนอยู่ได้อีกหลายปี", winTxt: "ซุนโฮออกจากเมืองไปยอมจำนน ง่อก๊กสิ้นสุด แผ่นดินกลับเป็นหนึ่งตามประวัติศาสตร์" }
+];
+/* ฉบับปกติที่ยังไม่มี group ให้จัดกลุ่มเดียวกัน เพื่อไม่เจอซ้ำสองฉบับ */
+[["h_184_yellow", "yellow"], ["h_190_hulao", "hulao"], ["h_198_xiapi", "xiapi"], ["h_263_mianzhu", "shufall"]].forEach(([id, g]) => { const e = HIST_EVENTS.find(x => x.id === id); if (e && !e.group) e.group = g; });
+
+const sideF = (w, k) => k === "A" ? w.A : w.B;
+const otherK = k => k === "A" ? "B" : "A";
+/* เมืองที่ฉวยได้: เมืองของคู่ศึก ติดกับแคว้นเรา และไม่มีสัญญา */
+function geoGrabCity(s, w) {
+  const ids = ownCities().map(c => c.id), cand = [];
+  ids.forEach(id => ROADS[id].forEach(n => { const o = W.cities[n].owner; if ((o === w.A || o === w.B) && !hasPact(o) && !cand.includes(n)) cand.push(n); }));
+  cand.sort((a, b) => W.cities[a].troops - W.cities[b].troops);
+  return cand[0] || null;
+}
+function geoJoin(s, w, k, ok, res) {
+  const f = sideF(w, k), o = sideF(w, otherK(k)), winner = w.win === k;
+  s.troops = Math.round(s.troops * (ok ? 0.88 : 0.72)); s.morale = clamp(s.morale + (ok ? 6 : -10), 5, 100);
+  addRel(s, f, ok ? 28 : 14, res); addRel(s, o, -25, res, false);
+  if (!ok) { addStats(s, { health: -6 }); return `ทัพของคุณไปถึงช้ากว่ากำหนด ถูกข้าศึกตีกระหนาบจนเสียหายหนัก ${winner ? w.winTxt : "ศึกจบลงตามที่ประวัติศาสตร์จารึก"}`; }
+  addFame(s, 4, res);
+  const pow = realmTroops(s), flipP = clamp(pow / 40000, 0.3, 0.8);
+  if (!winner && pow >= 12000 && R() < flipP) {
+    w.flip(s); s.flags["flip_" + w.g] = true;
+    s.deeds.push(Y(s) + ` พลิกผล${w.name}`); addFame(s, 6, res);
+    addNews(s.year, `ประวัติศาสตร์เปลี่ยน! ${W.playerName || s.name} ช่วย${fN(s, f)}พลิกผล${w.name}`, true);
+    res.extra.push(`⚡ ประวัติศาสตร์เปลี่ยน: ${w.name} จบไม่เหมือนในพงศาวดาร`);
+    return w.flipTxt;
+  }
+  if (winner) {
+    const g = 40 + rint(60); s.gold += g; res.extra.push(`ส่วนแบ่งของรางวัลจากศึก ${g} ตำลึง`);
+    const cid = geoGrabCity(s, w);
+    if (cid && W.cities[cid].owner === o && R() < 0.45 && ownCities().length) { takeCity(s, cid, res, `แบ่งดินแดนหลัง${w.name}`); return `${w.winTxt} ${fL(s, f)}ยก${CITY[cid].name}ให้แคว้นคุณเป็นบำเหน็จ`; }
+    return `${w.winTxt} ${fL(s, f)}จดจำความช่วยเหลือของคุณไว้`;
+  }
+  return `ทัพของคุณรบได้ดี แต่ไม่พอจะเปลี่ยนชะตาศึก ${w.winTxt} ถึงอย่างนั้น ${fL(s, f)}ก็ยังจดจำบุญคุณนี้`;
+}
+function geoCardOwn(w) {
+  return { id: "h_g_" + w.g + "_own", side: ["own"], group: w.g, minY: w.y[0], maxY: w.y[1], minAge: 16,
+    req: s => isRuler(s) && geoDist(s, w.site) <= 1,
+    badge: `ค.ศ. ${w.y[0]} · ${w.name} ติดชายแดนแคว้นคุณ`, title: w.title,
+    body: s => w.body(s) + ` (ฝ่ายใดแพ้ในประวัติศาสตร์ ถ้าทัพของคุณแข็งพอ ก็อาจพลิกผลได้)`,
+    choices: [
+      { tf: s => `ยกทัพไปช่วย${fN(s, w.A)}`, hf: s => `วัดนำทัพ · ${w.win === "A" ? "ฝ่ายที่ชนะในประวัติศาสตร์" : "ช่วยฝ่ายเพลี่ยงพล้ำ อาจพลิกประวัติศาสตร์"}`, chk: { st: ["command"], dc: 56 },
+        ok: { fn: (s, r) => geoJoin(s, w, "A", true, r) }, fail: { fn: (s, r) => geoJoin(s, w, "A", false, r), deadly: 0.03 } },
+      { tf: s => `ยกทัพไปช่วย${fN(s, w.B)}`, hf: s => `วัดนำทัพ · ${w.win === "B" ? "ฝ่ายที่ชนะในประวัติศาสตร์" : "ช่วยฝ่ายเพลี่ยงพล้ำ อาจพลิกประวัติศาสตร์"}`, chk: { st: ["command"], dc: 56 },
+        ok: { fn: (s, r) => geoJoin(s, w, "B", true, r) }, fail: { fn: (s, r) => geoJoin(s, w, "B", false, r), deadly: 0.03 } },
+      { t: "ปิดด่าน วางตัวเป็นกลาง เปิดประตูรับผู้อพยพ", h: "ปลอดภัย · ได้ราษฎรเพิ่ม",
+        ok: { fn: (s, r) => { const c = rpick(ownCities()); c.pop = Math.round(c.pop * 1.06); c.order = clamp(c.order - 3, 0, 100); addRel(s, w.A, -4, r, false); addRel(s, w.B, -4, r, false); addFame(s, 1, r); return `ผู้อพยพหนีศึกเข้ามาใน${CITY[c.id].name}นับหมื่น ทั้งสองฝ่ายไม่พอใจที่คุณนิ่งเฉย แต่ราษฎรพากันสรรเสริญ ${w.winTxt}`; } } },
+      { tf: s => { const c = geoGrabCity(s, w); return c ? `ฉวยโอกาสตี${CITY[c].name}ที่ทหารออกศึกไปหมด` : "ฉวยโอกาส"; }, need: s => !!geoGrabCity(s, w), h: "วัดกลยุทธ์ · ได้เมือง แต่ผูกแค้น", chk: { st: ["strategy"], dc: 60 },
+        ok: { fn: (s, r) => { const cid = geoGrabCity(s, w), o = W.cities[cid].owner; addRel(s, o, -30, r); takeCity(s, cid, r, `ฉวยโอกาสระหว่าง${w.name}`); return `ทหารรักษาเมืองเหลือไม่ถึงพัน ธงของ${W.playerName}ขึ้นบนกำแพง${CITY[cid].name}ภายในคืนเดียว ส่วนสนามรบใหญ่ ${w.winTxt}`; } },
+        fail: { fn: (s, r) => { const cid = geoGrabCity(s, w); addRel(s, W.cities[cid].owner, -15, r); s.troops = Math.round(s.troops * 0.82); return `ข้าศึกรู้ทันและทิ้งทหารรักษาเมืองไว้มากกว่าที่คิด ทัพของคุณเสียหายแล้วถอยกลับ`; }, st: { health: -5 } } }
+    ] };
+}
+function geoCardFree(w) {
+  return { id: "h_g_" + w.g + "_free", side: ["free"], group: w.g, minY: w.y[0], maxY: w.y[1], minAge: 16,
+    req: s => isFree(s) && hopDist([s.loc], w.site, 2) <= 1,
+    badge: s => `ค.ศ. ${w.y[0]} · ${w.name} มาถึง${cn(s.loc)}`, title: w.title,
+    body: s => w.body(s) + ` ตอนนี้คุณอยู่ที่${cn(s.loc)} กลางเส้นทางเดินทัพ คนไร้สังกัดอย่างคุณต้องเลือกว่าจะยืนตรงไหน`,
+    choices: [
+      { tf: s => `อาสาเข้าทัพ${fN(s, w.A)}`, h: "เข้าสังกัด · วัดวรยุทธ์", chk: { st: ["martial"], dc: 52 }, need: s => citiesOf(w.A).length > 0,
+        ok: { fn: (s, r) => { joinLord(s, w.A, r); addFame(s, 3, r); s.merit = (s.merit || 0) + 3; return `คุณตีฝ่าแนวข้าศึกจนขุนพลของ${fN(s, w.A)}เห็นฝีมือ รับเข้าทัพทันที ${w.win === "A" ? w.winTxt : ""}`; } },
+        fail: { fn: (s, r) => { joinLord(s, w.A, r); return "คุณได้เข้าทัพ แต่เป็นแค่ทหารแนวหน้าที่ไม่มีใครจำชื่อได้"; }, st: { health: -8 }, deadly: 0.03 } },
+      { tf: s => `อาสาเข้าทัพ${fN(s, w.B)}`, h: "เข้าสังกัด · วัดวรยุทธ์", chk: { st: ["martial"], dc: 52 }, need: s => citiesOf(w.B).length > 0,
+        ok: { fn: (s, r) => { joinLord(s, w.B, r); addFame(s, 3, r); s.merit = (s.merit || 0) + 3; return `คุณนำชาวบ้านชี้ทางลับให้ทัพ${fN(s, w.B)} ได้รับการแต่งตั้งทันที ${w.win === "B" ? w.winTxt : ""}`; } },
+        fail: { fn: (s, r) => { joinLord(s, w.B, r); return "คุณได้เข้าทัพ แต่ถูกส่งไปขนเสบียงตลอดศึก"; }, st: { health: -8 }, deadly: 0.03 } },
+      { t: "รวบรวมชาวบ้านตั้งค่ายป้องกันหมู่บ้าน", h: "ชื่อเสียง + ได้ผู้ติดตาม", chk: { st: ["charisma"], dc: 48 },
+        ok: { fn: (s, r) => { const n = 200 + rint(400); s.troops += n; addFame(s, 4, r); return `ทั้งสองทัพผ่านไปโดยไม่กล้าแตะหมู่บ้านของคุณ ชาวบ้าน ${n} คนขอติดตามคุณต่อไป ${w.winTxt}`; } },
+        fail: { txt: "ทัพม้าผ่านมาเผาหมู่บ้าน คุณพาชาวบ้านหนีเข้าป่าได้เพียงครึ่งเดียว", st: { health: -8 } } },
+      { t: "รอศึกสงบแล้วเก็บของในสนามรบ", h: "ได้เงิน · ชื่อเสียงลด",
+        ok: { fn: (s, r) => { const g = 30 + rint(50); s.gold += g; addFame(s, -2, r); return `คุณเก็บอาวุธและเกราะจากสนามรบไปขายได้ ${g} ตำลึง ${w.winTxt}`; } } }
+    ] };
+}
+const GEO_HIST = [];
+GEO_WARS.forEach(w => { GEO_HIST.push(geoCardOwn(w), geoCardFree(w)); });
+HIST_EVENTS.unshift(...GEO_HIST);   // มาก่อนฉบับปกติ ถ้าอยู่ใกล้สนามรบจะเจอฉบับนี้แทน
+
+/* ================= อีเวนต์ตามแผนที่ ================= */
+const activeWar = (s, lo, hi) => GEO_WARS.find(w => s.year >= w.y[0] && s.year <= w.y[1] + 1 && (d => d >= lo && d <= hi)(geoDist(s, w.site)));
+const ruler = s => isRuler(s);
+/* ก๊กเพื่อนบ้านที่ตรงเงื่อนไข */
+const borderWith = (s, test) => borderFactions(s).filter(f => test(f));
+/* เมืองของเราที่ติดกับก๊ก f */
+const ourEdge = f => { const p = borderPair(f); return p ? p[1] : ownCities()[0].id; };
+const theirEdge = f => { const p = borderPair(f); return p ? p[0] : citiesOf(f)[0].id; };
+const nearOf = (s, test) => { const out = []; homeIds(s).forEach(id => ROADS[id].forEach(n => { if (!out.includes(n) && test(W.cities[n])) out.push(n); })); return out; };
+
+const MAP_CARDS = [
+  /* ---------- การทูต (ผู้ครองแคว้น) ---------- */
+  { id: "a_d_council", req: ruler, minAge: 18, weight: 1.6, repeat: 1.5, noCap: true,
+    setup: s => { const fs = borderFactions(s).slice(0, 3); return fs.length ? { fs } : false; },
+    badge: "การทูต · ที่ประชุมขุนนาง", title: "ควรส่งทูตไปทางไหน",
+    body: s => `ขุนนางในแคว้นถกกันว่าควรผูกมิตรกับใครก่อน แคว้นของคุณมีชายแดนติดกับ ${s.ctx.fs.map(f => `${fN(s, f)} (${relLabel(f)})`).join(" · ")} การส่งทูตต้องใช้ของกำนัลราว 20 ตำลึง`,
+    choices: [0, 1, 2].map(i => ({ tf: s => `ส่งทูตไป${fN(s, s.ctx.fs[i])}`, h: "วัดบารมี · ใช้เงิน 20", need: s => !!s.ctx.fs[i] && s.gold >= 20,
+      chk: { st: ["charisma"], dc: 50 }, chanceFn: s => envoyChance(s, s.ctx.fs[i]),
+      ok: { fn: (s, r) => { const f = s.ctx.fs[i]; s.gold -= 20; addRel(s, f, 12 + rint(7), r); return `${fL(s, f)}ต้อนรับทูตของคุณอย่างอบอุ่น แล้วส่งของขวัญตอบกลับมา`; } },
+      fail: { fn: (s, r) => { const f = s.ctx.fs[i]; s.gold -= 20; addRel(s, f, -4, r); return `${fL(s, f)}ไม่ยอมให้ทูตเข้าเฝ้า ของกำนัลถูกส่งคืนมาพร้อมคำเย้ยหยัน`; } } }))
+      .concat([{ t: "ยังไม่ส่งทูต เก็บเงินไว้ใช้ในแคว้น", h: "ไม่มีอะไรเปลี่ยน", ok: { txt: "ขุนนางแยกย้ายกลับไป ชายแดนยังเงียบสงบเหมือนเดิม" } }]) },
+  { id: "a_d_envoyin", req: s => ruler(s) && borderWith(s, f => relOf(f) >= -19 && !hasPact(f)).length > 0, minAge: 18, weight: 1.2, repeat: 2,
+    setup: s => { const fs = borderWith(s, f => relOf(f) >= -19 && !hasPact(f)); return fs.length ? { f: rpick(fs) } : false; },
+    badge: "การทูต · ทูตต่างแคว้น", title: s => `ทูตจาก${fN(s, s.ctx.f)}มาถึงประตูเมือง`,
+    body: s => `${fL(s, s.ctx.f)}ส่งทูตพร้อมผ้าไหมสิบพับและม้าดีสองตัวมาถึง${cn(ourEdge(s.ctx.f))} ทูตเสนอให้ทำสัญญาไม่รุกรานกันห้าปี เพื่อให้ทั้งสองฝ่ายหันไปรับมือศัตรูทางอื่น`,
+    choices: [
+      { t: "ลงนามสัญญาไม่รุกรานห้าปี", h: "วัดปกครอง · ชายแดนปลอดภัย", chk: { st: ["politics"], dc: 48 },
+        ok: { fn: (s, r) => { makePact(s, s.ctx.f, 5, r); addRel(s, s.ctx.f, 10, r); return "ทั้งสองฝ่ายเซ่นเหล้าต่อฟ้าดินแล้วลงนามในสัญญา ทหารชายแดนถอนเสาค่ายออกไปฝั่งละสิบลี้"; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, 3, r); return "ร่างสัญญาติดขัดเรื่องเส้นเขตแดน ทูตกลับไปโดยยังไม่ได้ลงนาม แต่บรรยากาศก็ยังดี"; } } },
+      { t: "รับของขวัญไว้ แต่ยังไม่ผูกมัดตัวเอง", h: "ได้เงิน", ok: { fn: (s, r) => { s.gold += 30; addRel(s, s.ctx.f, 4, r); return "คุณเลี้ยงรับรองทูตอย่างดีและรับของขวัญไว้ แต่บ่ายเบี่ยงเรื่องสัญญา"; } } },
+      { t: "ไล่ทูตกลับไป แสดงว่าไม่เกรงใคร", h: "ชื่อเสียง + · ผูกแค้น", ok: { fn: (s, r) => { addFame(s, 1, r); addRel(s, s.ctx.f, -15, r); return "ทูตกลับไปด้วยใบหน้าแดงก่ำ ขุนพลในแคว้นของคุณโห่ร้องชอบใจ"; } } }
+    ] },
+  { id: "a_d_allyoffer", req: s => ruler(s) && borderWith(s, f => relOf(f) >= 40 && relOf(f) < 60).length > 0, minAge: 18, weight: 1.6, repeat: 3, prio: 0.15,
+    setup: s => { const fs = borderWith(s, f => relOf(f) >= 40 && relOf(f) < 60); return fs.length ? { f: fs[0] } : false; },
+    badge: "การทูต · ขอเป็นพันธมิตร", title: s => `${fL(s, s.ctx.f)}ขอสาบานเป็นพันธมิตร`,
+    body: s => `ความสัมพันธ์กับ${fN(s, s.ctx.f)}ใกล้ชิดขึ้นเรื่อย ๆ ${fL(s, s.ctx.f)}ส่งสาส์นมาขอทำสัตย์เป็นพันธมิตร ช่วยเหลือกันยามศึก เปิดการค้าเสรี แต่ศัตรูของ${fN(s, s.ctx.f)}${rivalsOf(s.ctx.f, s.year).filter(x => citiesOf(x).length).length ? ` (${rivalsOf(s.ctx.f, s.year).filter(x => citiesOf(x).length).map(x => fN(s, x)).join(" ")})` : ""}ก็จะถือว่าคุณเป็นศัตรูไปด้วย`,
+    choices: [
+      { t: "ทำสัตย์เป็นพันธมิตร", h: "พันธมิตร + สัญญาสิบปี · คู่ปรับเขาไม่พอใจ", ok: { fn: (s, r) => { addRel(s, s.ctx.f, Math.max(20, 65 - relOf(s.ctx.f)), r); makePact(s, s.ctx.f, 10, r); addFame(s, 2, r); return "ทั้งสองฝ่ายกรีดเลือดผสมเหล้าดื่มต่อหน้าแท่นบูชาฟ้า สาบานว่าจะไม่ทอดทิ้งกันยามศึก"; } } },
+      { t: "ขอให้ส่งบุตรหลานมาเป็นตัวประกันก่อน", h: "วัดบารมี · ได้ทั้งพันธมิตรและหลักประกัน", chk: { st: ["charisma"], dc: 62 },
+        ok: { fn: (s, r) => { addRel(s, s.ctx.f, Math.max(15, 62 - relOf(s.ctx.f)), r); makePact(s, s.ctx.f, 10, r); s.gold += 50; return "บุตรชายของเจ้าแคว้นนั้นเดินทางมาอยู่ในราชสำนักของคุณ พร้อมของบรรณาการห้าสิบตำลึง"; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -12, r); return "อีกฝ่ายเห็นว่าคุณไม่ไว้ใจ จึงถอนข้อเสนอกลับไป"; } } },
+      { t: "ขอบคุณ แต่ขอเป็นแค่มิตรที่ดีต่อกัน", h: "ไม่ผูกมัด", ok: { fn: (s, r) => { addRel(s, s.ctx.f, -5, r); return "อีกฝ่ายเข้าใจ แต่ก็รู้สึกเสียหน้าอยู่บ้าง"; } } }
+    ] },
+  { id: "a_d_joint", req: s => ruler(s) && s.troops >= 800, minAge: 18, weight: 1.2, repeat: 3,
+    setup: s => {
+      const allies = borderWith(s, f => relTier(f).k === "ally"); if (!allies.length) return false;
+      const a = rpick(allies), t = nearOf(s, c => !noRel(c.owner) && c.owner !== a && !hasPact(c.owner) && relTier(c.owner).k !== "ally" && ROADS[c.id].some(n => W.cities[n].owner === a));
+      return t.length ? { a, cid: t[0], f: W.cities[t[0]].owner } : false; },
+    badge: "การทูต · ร่วมศึก", title: s => `${fN(s, s.ctx.a)}ชวนตี${cn(s.ctx.cid)}`,
+    body: s => `${fL(s, s.ctx.a)}พันธมิตรของคุณส่งสาส์นมาว่าจะยกทัพตี${cn(s.ctx.cid)}ของ${fN(s, s.ctx.f)} ขอให้คุณตีขนาบอีกด้าน ถ้าสำเร็จ เมืองจะเป็นของฝ่ายที่เข้าเมืองได้ก่อน`,
+    choices: [
+      { t: "ยกทัพตีขนาบตามนัด", h: "วัดนำทัพ · อาจได้เมือง", chk: { st: ["command"], dc: 58 },
+        ok: { fn: (s, r) => { addRel(s, s.ctx.a, 10, r); addRel(s, s.ctx.f, -25, r); s.troops = Math.round(s.troops * 0.9); if (R() < 0.6) { takeCity(s, s.ctx.cid, r, `ร่วมศึกกับ${fN(s, s.ctx.a)}`); return `ทัพของคุณเข้าประตูเมืองได้ก่อน ${cn(s.ctx.cid)}เป็นของ${W.playerName}`; } const c = W.cities[s.ctx.cid]; c.owner = s.ctx.a; c.touched = true; s.gold += 60; return `ทัพพันธมิตรเข้าเมืองได้ก่อน แต่ส่งส่วนแบ่ง 60 ตำลึงมาให้ตามสัญญา`; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -15, r); s.troops = Math.round(s.troops * 0.8); return "ข้าศึกรู้ทันและตีทัพของคุณก่อนพันธมิตรจะมาถึง"; }, st: { health: -5 } } },
+      { t: "ส่งเสบียงไปช่วยแทนการยกทัพ", h: "ใช้เงิน 30 · ไม่เสี่ยง", need: s => s.gold >= 30, ok: { fn: (s, r) => { s.gold -= 30; addRel(s, s.ctx.a, 4, r); addRel(s, s.ctx.f, -6, r); return "พันธมิตรรับเสบียงไว้ แม้จะผิดหวังที่คุณไม่ยกทัพมาเอง"; } } },
+      { t: "ปฏิเสธ ยังไม่อยากเปิดศึกใหม่", h: "พันธมิตรผิดหวัง", ok: { fn: (s, r) => { addRel(s, s.ctx.a, -15, r); return "ทูตพันธมิตรกลับไปด้วยสีหน้าบึ้งตึง"; } } }
+    ] },
+  { id: "a_d_tribute", req: ruler, minAge: 18, weight: 1.1, repeat: 3,
+    setup: s => { const fs = borderWith(s, f => factionPower(f) >= realmTroops(s) * 2.5 && relOf(f) < 20 && !hasPact(f)); return fs.length ? { f: fs[0] } : false; },
+    badge: "การทูต · ถูกข่มขู่", title: s => `${fL(s, s.ctx.f)}เรียกบรรณาการ`,
+    body: s => `${fN(s, s.ctx.f)}มีทหารมากกว่าแคว้นคุณหลายเท่า ทูตของ${fL(s, s.ctx.f)}มาพร้อมคำขาดว่าให้ส่งบรรณาการหรือตัวประกัน ไม่เช่นนั้นทัพใหญ่จะมาเยือน${cn(ourEdge(s.ctx.f))}ในฤดูหน้า`,
+    choices: [
+      { t: "ส่งบรรณาการเพื่อซื้อเวลา", h: "เสียเงิน · ปลอดภัยไปช่วงหนึ่ง", ok: { fn: (s, r) => { const g = Math.min(s.gold, 80); s.gold -= g; addRel(s, s.ctx.f, 15 + Math.round(g / 8), r); return `คุณส่งทองและผ้าไหมมูลค่า ${g} ตำลึงไปถวาย ทูตกลับไปด้วยความพอใจ`; } } },
+      { t: "ส่งบุตรไปเป็นตัวประกัน", h: "ลูกไปอยู่ราชสำนักเขา · สัญญาแปดปี", need: s => unwedKid(s, 10, 26) >= 0,
+        ok: { fn: (s, r) => { const c = s.children[unwedKid(s, 10, 26)]; c.hostage = s.ctx.f; addRel(s, s.ctx.f, 30, r); makePact(s, s.ctx.f, 8, r); return `${c.name}ออกเดินทางไปอยู่ในราชสำนัก${fN(s, s.ctx.f)} ทั้งที่ยังเหลียวหลังมองบ้านไม่หยุด`; } } },
+      { t: "ยุแยงคู่ปรับของเขาให้ลุกขึ้นก่อน", h: "วัดกลยุทธ์", chk: { st: ["strategy"], dc: 62 }, need: s => rivalsOf(s.ctx.f, s.year).some(x => citiesOf(x).length),
+        ok: { fn: (s, r) => { const x = rivalsOf(s.ctx.f, s.year).find(q => citiesOf(q).length); addRel(s, x, 15, r, false); const c = W.cities[theirEdge(s.ctx.f)]; c.troops = Math.round(c.troops * 0.7); return `จดหมายลับของคุณทำให้${fN(s, x)}ยกทัพประชิด${fN(s, s.ctx.f)} ทัพที่เตรียมมาตีคุณต้องถอนกลับไปรับมือ`; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -25, r); return "จดหมายลับถูกดักได้ระหว่างทาง ความแค้นยิ่งทวีขึ้น"; } } },
+      { t: "ปฏิเสธ ทำลายสาส์นต่อหน้าทูต", h: "ชื่อเสียง + · เขาโกรธมาก", ok: { fn: (s, r) => { addFame(s, 3, r); addRel(s, s.ctx.f, -25, r); return "ขุนพลของคุณชักดาบโห่ร้อง แต่ทุกคนรู้ดีว่าศึกใหญ่กำลังมา"; } } }
+    ] },
+  { id: "a_d_border", req: ruler, minAge: 18, weight: 1.2, repeat: 2,
+    setup: s => { const fs = borderWith(s, f => relOf(f) <= -20 && !hasPact(f)); if (!fs.length) return false; const f = fs[0]; return { f, them: theirEdge(f), us: ourEdge(f) }; },
+    badge: "ชายแดน · ทัพประชิด", title: s => `${fN(s, s.ctx.f)}ตั้งค่ายประชิด${cn(s.ctx.us)}`,
+    body: s => `กองสอดแนมรายงานว่าทหารจาก${cn(s.ctx.them)}ของ${fN(s, s.ctx.f)}ราว ${fmt(W.cities[s.ctx.them].troops)} นาย มาตั้งค่ายห่างกำแพง${cn(s.ctx.us)}เพียงสามสิบลี้ ท่าทีของ${fL(s, s.ctx.f)}ต่อแคว้นคุณคือ ${relLabel(s.ctx.f)}`,
+    choices: [
+      { t: "ชิงตีค่ายก่อนในคืนเดือนมืด", h: "วัดนำทัพ · ทำลายกำลังข้าศึก", chk: { st: ["command"], dc: 58 },
+        ok: { fn: (s, r) => { const c = W.cities[s.ctx.them]; c.troops = Math.round(c.troops * 0.6); addRel(s, s.ctx.f, -10, r); addFame(s, 2, r); return `ไฟลุกท่วมค่ายข้าศึกทั้งคืน ทหารของ${fN(s, s.ctx.f)}แตกหนีกลับ${cn(s.ctx.them)}`; } },
+        fail: { fn: (s, r) => { s.troops = Math.round(s.troops * 0.85); return "ข้าศึกระวังตัวอยู่แล้ว ทัพของคุณเสียหายแล้วถอยกลับ"; }, st: { health: -5 } } },
+      { t: "เร่งซ่อมกำแพงและขุดคูเมือง", h: "ใช้เงิน 30 · กำแพง +", need: s => s.gold >= 30, ok: { fn: (s, r) => { s.gold -= 30; const c = W.cities[s.ctx.us]; c.wall = Math.min(100, c.wall + 10); return `กำแพง${cn(s.ctx.us)}สูงขึ้นอีกสามศอก ข้าศึกเห็นแล้วก็ถอยค่ายออกไป`; } } },
+      { t: "ส่งทูตไปเจรจาลดความตึงเครียด", h: "วัดบารมี", chk: { st: ["charisma"], dc: 54 },
+        ok: { fn: (s, r) => { addRel(s, s.ctx.f, 15, r); return "ทูตของคุณกลับมาพร้อมคำมั่นว่าอีกฝ่ายจะถอนค่าย"; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -5, r); return "ทูตถูกขังไว้สามวันก่อนจะถูกปล่อยกลับมามือเปล่า"; } } }
+    ] },
+  { id: "a_d_defect", req: ruler, minAge: 18, weight: 1, repeat: 3,
+    setup: s => { const t = nearOf(s, c => !noRel(c.owner) && relOf(c.owner) <= 10 && citiesOf(c.owner).length >= 3 && !hasPact(c.owner)); return t.length ? { cid: rpick(t), f: W.cities[t[0]].owner } : false; },
+    badge: "ชายแดน · เจ้าเมืองแปรพักตร์", title: s => `เจ้าเมือง${cn(s.ctx.cid)}ลอบส่งจดหมายมา`,
+    body: s => { const f = W.cities[s.ctx.cid].owner; return `เจ้าเมือง${cn(s.ctx.cid)}ของ${fN(s, f)}ถูกเจ้านายระแวงจนกลัวภัยถึงตัว จึงลอบส่งจดหมายมาขอพาเมืองมาสวามิภักดิ์ต่อคุณ แต่ขุนนางบางคนเตือนว่าอาจเป็นกลลวงให้ทัพเราเข้าไปติดกับ`; },
+    choices: [
+      { t: "ส่งคนลอบเข้าไปตรวจให้แน่ก่อนรับ", h: "วัดกลยุทธ์ · ได้เมืองถ้าเป็นเรื่องจริง", chk: { st: ["strategy"], dc: 55 },
+        ok: { fn: (s, r) => { const f = W.cities[s.ctx.cid].owner; addRel(s, f, -30, r); takeCity(s, s.ctx.cid, r, "เจ้าเมืองแปรพักตร์"); return `เป็นเรื่องจริง เจ้าเมืองเปิดประตูต้อนรับธง${W.playerName}โดยไม่เสียเลือดสักหยด`; } },
+        fail: { txt: "สายลับของคุณหายไปไม่กลับมา คุณตัดสินใจไม่เสี่ยงต่อ", st: { strategy: 1 } } },
+      { t: "รีบยกทัพไปรับทันที", h: "เสี่ยงดวง", chk: { luck: 62 },
+        ok: { fn: (s, r) => { const f = W.cities[s.ctx.cid].owner; addRel(s, f, -30, r); takeCity(s, s.ctx.cid, r, "เจ้าเมืองแปรพักตร์"); return "ประตูเมืองเปิดออกตามนัด ทหารทั้งเมืองเปลี่ยนธงภายในคืนเดียว"; } },
+        fail: { fn: (s, r) => { s.troops = Math.round(s.troops * 0.75); return "เป็นกลลวง! ทัพของคุณเดินเข้าประตูเมืองแล้วถูกยิงธนูจากสองฝั่งกำแพง"; }, st: { health: -10 }, deadly: 0.04 } },
+      { t: "ส่งจดหมายนั้นคืนให้เจ้านายของเขา", h: "ได้ใจก๊กนั้น", ok: { fn: (s, r) => { const f = W.cities[s.ctx.cid].owner; addRel(s, f, 14, r); return `${fL(s, f)}ซาบซึ้งในความซื่อตรงของคุณ ส่วนชะตาของเจ้าเมืองคนนั้นไม่มีใครกล้าถาม`; } } }
+    ] },
+  { id: "a_d_betray", req: ruler, minAge: 18, weight: 0.8, repeat: 5,
+    setup: s => { const fs = borderWith(s, f => (relTier(f).k === "ally" || relTier(f).k === "friend") && factionPower(f) >= realmTroops(s) * 2 && (f === "lu" || R() < 0.5)); return fs.length ? { f: fs[0], us: ourEdge(fs[0]) } : false; },
+    badge: "การทูต · ถูกหักหลัง", title: s => `${fN(s, s.ctx.f)}ฉีกสัญญา`,
+    body: s => `ทั้งที่เพิ่งดื่มเหล้าสาบานกันไม่นาน ${fL(s, s.ctx.f)}เห็นว่าแคว้นคุณอ่อนกว่ามาก จึงส่งทัพลอบตี${cn(s.ctx.us)}ในยามรุ่งสาง`,
+    choices: [
+      { t: "นำทัพไปรักษาเมืองด้วยตัวเอง", h: "วัดนำทัพ", chk: { st: ["command"], dc: 60 },
+        ok: { fn: (s, r) => { if (W.pact) delete W.pact[s.ctx.f]; addRel(s, s.ctx.f, -60, r, false); addFame(s, 3, r); return `ทัพหักหลังแตกพ่ายหน้ากำแพง${cn(s.ctx.us)} ทั่วแผ่นดินรู้ว่าใครเป็นฝ่ายผิดสัญญา`; } },
+        fail: { fn: (s, r) => { if (W.pact) delete W.pact[s.ctx.f]; addRel(s, s.ctx.f, -60, r, false); const c = W.cities[s.ctx.us]; if (ownCities().length > 1) { c.owner = s.ctx.f; c.troops = Math.round(c.troops * 0.5); c.touched = true; syncFaction(s); return `${cn(s.ctx.us)}แตก ธงของ${fN(s, s.ctx.f)}ขึ้นแทน`; } s.troops = Math.round(s.troops * 0.7); return "คุณรักษาเมืองไว้ได้อย่างหวุดหวิด แต่ทหารล้มตายไปมาก"; }, st: { health: -8 } } },
+      { t: "ประกาศความผิดของเขาให้ทั่วแผ่นดินรู้", h: "วัดบารมี · ก๊กอื่นเห็นใจ", chk: { st: ["charisma"], dc: 52 },
+        ok: { fn: (s, r) => { if (W.pact) delete W.pact[s.ctx.f]; addRel(s, s.ctx.f, -50, r, false); borderFactions(s).filter(x => x !== s.ctx.f).forEach(x => addRel(s, x, 10, r, false)); return "สาส์นประณามถูกอ่านในทุกราชสำนัก ก๊กอื่นต่างส่งคำปลอบใจและเสบียงมาให้"; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -40, r, false); s.troops = Math.round(s.troops * 0.85); return "ไม่มีใครอยากยุ่ง ส่วนทัพหักหลังก็ปล้นชายแดนแล้วถอยไป"; } } },
+      { t: "ส่งทองไปขอสงบศึก", h: "เสียเงิน 60", need: s => s.gold >= 60, ok: { fn: (s, r) => { s.gold -= 60; addRel(s, s.ctx.f, -15, r, false); return "อีกฝ่ายรับทองแล้วถอยทัพ แต่ความไว้ใจระหว่างกันไม่มีเหลืออีกแล้ว"; } } }
+    ] },
+  { id: "a_d_pacttempt", req: ruler, minAge: 18, weight: 0.9, repeat: 4,
+    setup: s => { const t = nearOf(s, c => hasPact(c.owner) && c.troops < s.troops * 0.35); return t.length ? { cid: t[0], f: W.cities[t[0]].owner } : false; },
+    badge: "การทูต · สัจจะกับโอกาส", title: s => `${cn(s.ctx.cid)}แทบไม่มีทหารเฝ้า`,
+    body: s => `${cn(s.ctx.cid)}ของ${fN(s, s.ctx.f)}ส่งทหารไปรบทางอื่นจนเหลือคนเฝ้าเพียง ${fmt(W.cities[s.ctx.cid].troops)} นาย ขุนพลของคุณเร่งให้ยกทัพไปยึด แต่คุณมีสัญญาไม่รุกรานกับ${fN(s, s.ctx.f)}อยู่ถึง ค.ศ. ${W.pact[s.ctx.f]}`,
+    choices: [
+      { t: "ฉีกสัญญา ยกทัพไปยึดเมือง", h: "ได้เมือง · เสียชื่อกับทุกก๊ก", ok: { fn: (s, r) => { breakPact(s, s.ctx.f, r); takeCity(s, s.ctx.cid, r, "ฉีกสัญญาไม่รุกราน"); return `${cn(s.ctx.cid)}เป็นของคุณในสามวัน แต่คำว่า “คนไม่มีสัจจะ” ติดตัวคุณไปทั่วแผ่นดิน`; } } },
+      { t: "รักษาสัจจะ", h: "ชื่อเสียง + · เขาซาบซึ้ง", ok: { fn: (s, r) => { addFame(s, 3, r); addRel(s, s.ctx.f, 10, r); return "คุณสั่งให้ทัพอยู่ในค่าย ข่าวนี้แพร่ไปถึง" + fN(s, s.ctx.f) + " และทุกคนต่างนับถือคำพูดของคุณ"; } } }
+    ] },
+  { id: "a_d_marry", req: s => ruler(s) && unwedKid(s, 15, 28) >= 0, minAge: 30, weight: 1, repeat: 4,
+    setup: s => { const fs = borderWith(s, f => relOf(f) >= -19); const i = unwedKid(s, 15, 28); return fs.length && i >= 0 ? { f: rpick(fs), ci: i } : false; },
+    badge: "การทูต · ดองเป็นญาติ", title: s => `${fN(s, s.ctx.f)}ขอดองเป็นทองแผ่นเดียวกัน`,
+    body: s => { const c = s.children[s.ctx.ci]; return `${fL(s, s.ctx.f)}ส่งแม่สื่อมาขอ${c.gender === "M" ? "ยกธิดาให้แต่งกับ" : "สู่ขอ"}${c.name} ${c.gender === "M" ? "บุตรชาย" : "บุตรสาว"}ของคุณ ถ้าตกลง ทั้งสองแคว้นจะเป็นญาติกัน`; },
+    choices: [
+      { t: "ตกลง จัดงานแต่งให้สมเกียรติทั้งสองแคว้น", h: "ความสัมพันธ์ + มาก · สัญญาหกปี", ok: { fn: (s, r) => { const c = s.children[s.ctx.ci]; marryChild(s, c, "political", rpick(SURNAMES) + rpick(c.gender === "M" ? FEMALE_NAMES : MALE_NAMES)); c.inlaw = s.ctx.f; addRel(s, s.ctx.f, 30, r); makePact(s, s.ctx.f, 6, r); return `ขบวนเจ้าสาวยาวสามลี้ ${c.name}ออกเรือนเป็นสะพานเชื่อมสองแคว้น`; } } },
+      { t: "ถามความสมัครใจของลูกก่อน", h: "วัดบารมี", chk: { st: ["charisma"], dc: 50 },
+        ok: { fn: (s, r) => { const c = s.children[s.ctx.ci]; marryChild(s, c, "political"); c.inlaw = s.ctx.f; addRel(s, s.ctx.f, 25, r); return `${c.name}พบคู่หมั้นแล้วพอใจ งานแต่งจึงมีทั้งการเมืองและความรัก`; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -6, r); return "ลูกของคุณร้องไห้ไม่ยอมแต่ง คุณจึงต้องปฏิเสธอย่างสุภาพ"; } } },
+      { t: "ปฏิเสธอย่างสุภาพ", h: "เขาเสียหน้าเล็กน้อย", ok: { fn: (s, r) => { addRel(s, s.ctx.f, -6, r); return "แม่สื่อกลับไปพร้อมของขวัญปลอบใจ"; } } }
+    ] },
+  { id: "a_d_rumor", req: s => ruler(s) && borderWith(s, f => relOf(f) >= 20).length > 0, minAge: 18, weight: 0.9, repeat: 3,
+    setup: s => { const fs = borderWith(s, f => relOf(f) >= 20); return fs.length ? { f: fs[0] } : false; },
+    badge: "การทูต · ข่าวลือยุแยง", title: s => `ข่าวลือว่าคุณจะหักหลัง${fN(s, s.ctx.f)}`,
+    body: s => `มีคนปล่อยข่าวในราชสำนัก${fN(s, s.ctx.f)}ว่าคุณกำลังเตรียมทัพลอบตีพวกเขา ${fL(s, s.ctx.f)}เริ่มเรียกขุนพลมาประชุม ถ้าไม่รีบแก้ ความสัมพันธ์ที่สร้างมาอาจพังในพริบตา`,
+    choices: [
+      { t: "เดินทางไปชี้แจงด้วยตัวเอง", h: "วัดบารมี", chk: { st: ["charisma"], dc: 56 },
+        ok: { fn: (s, r) => { addRel(s, s.ctx.f, 8, r); return "การไปเยือนด้วยตัวเองทำให้ข่าวลือเงียบลงทันที แถมยังสนิทกันมากขึ้น"; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -18, r); return "ยิ่งชี้แจงยิ่งเหมือนมีพิรุธ"; } } },
+      { t: "สืบหาต้นตอข่าวลือ", h: "วัดกลยุทธ์", chk: { st: ["strategy"], dc: 56 },
+        ok: { fn: (s, r) => { const x = rivalsOf(s.ctx.f, s.year).find(q => citiesOf(q).length); if (x) addRel(s, x, -8, r, false); addRel(s, s.ctx.f, 6, r); return `คุณจับคนปล่อยข่าวได้ เป็นสายลับของ${x ? fN(s, x) : "ก๊กอื่น"} ส่งตัวไปให้${fL(s, s.ctx.f)}ตัดสินเอง`; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -12, r); return "สืบไม่พบอะไร ข่าวลือลามไปเรื่อย ๆ"; } } },
+      { t: "ส่งของขวัญไปปลอบใจ", h: "ใช้เงิน 30", need: s => s.gold >= 30, ok: { fn: (s, r) => { s.gold -= 30; addRel(s, s.ctx.f, 2, r); return "ของขวัญช่วยได้บ้าง แต่ความระแวงยังไม่หายไปทั้งหมด"; } } }
+    ] },
+  /* ---------- ภายในแคว้น (ผูกกับเมืองจริง) ---------- */
+  { id: "a_mp_revolt", req: s => ruler(s) && ownCities().some(c => c.order < 52), minAge: 18, weight: 1.2, repeat: 2,
+    setup: s => { const c = ownCities().filter(c => c.order < 52).sort((a, b) => a.order - b.order)[0]; return c ? { cid: c.id } : false; },
+    badge: "แคว้น · กบฏชาวนา", title: s => `ชาวนาลุกฮือที่${cn(s.ctx.cid)}`,
+    body: s => `ภาษีหนักและข้าราชการโกงกินทำให้ชาวนา${cn(s.ctx.cid)}ลุกฮือ เผาจวนเจ้าเมืองไปแล้วหนึ่งหลัง ความสงบในเมืองเหลือเพียง ${W.cities[s.ctx.cid].order}`,
+    choices: [
+      { t: "ยกทัพไปปราบให้ราบคาบ", h: "วัดนำทัพ · พลาดอาจเสียเมือง", chk: { st: ["command"], dc: 52 },
+        ok: { fn: (s, r) => { const c = W.cities[s.ctx.cid]; c.order = clamp(c.order + 15, 0, 100); s.troops = Math.round(s.troops * 0.93); addFame(s, -1, r); return "กบฏถูกปราบภายในเจ็ดวัน หัวหน้ากบฏถูกเสียบประจานหน้าประตูเมือง"; } },
+        fail: { fn: (s, r) => { const c = W.cities[s.ctx.cid]; if (ownCities().length > 1) { c.owner = "none"; c.touched = true; c.troops = Math.round(c.pop * 0.03); syncFaction(s); return `ทัพของคุณถูกตีแตก ${cn(s.ctx.cid)}ตกเป็นของกบฏ`; } c.order = clamp(c.order + 5, 0, 100); s.troops = Math.round(s.troops * 0.8); return "ปราบไม่สำเร็จ ต้องยอมถอยไปตั้งหลักนอกเมือง"; }, st: { health: -6 } } },
+      { t: "ลดภาษี ลงโทษขุนนางฉ้อฉล", h: "วัดปกครอง · ใช้เงิน 30", need: s => s.gold >= 30, chk: { st: ["politics"], dc: 50 },
+        ok: { fn: (s, r) => { s.gold -= 30; const c = W.cities[s.ctx.cid]; c.order = clamp(c.order + 25, 0, 100); addFame(s, 2, r); return "ชาวนาวางจอบเสียมแล้วกลับไปทำนา บางคนถึงกับกราบขอบคุณกลางถนน"; } },
+        fail: { fn: (s, r) => { s.gold -= 30; const c = W.cities[s.ctx.cid]; c.order = clamp(c.order + 8, 0, 100); return "เงินถูกขุนนางกินไปครึ่งหนึ่งก่อนถึงมือชาวบ้าน"; } } },
+      { t: "เชิญหัวหน้ากบฏมาเจรจา", h: "วัดบารมี · อาจได้คนเก่ง", chk: { st: ["charisma"], dc: 52 },
+        ok: { fn: (s, r) => { const c = W.cities[s.ctx.cid]; c.order = clamp(c.order + 12, 0, 100); if (R() < 0.35) addLieut(s, "อดีตหัวหน้ากบฏ", r); return "หัวหน้ากบฏยอมวางอาวุธแลกกับการอภัยโทษ ชาวเมืองสงบลง"; } },
+        fail: { txt: "หัวหน้ากบฏไม่ไว้ใจ เจรจาไม่เป็นผล" } }
+    ] },
+  { id: "a_mp_famine", req: ruler, minAge: 18, weight: 1, repeat: 3,
+    setup: s => { const c = rpick(ownCities()); const f = borderWith(s, x => relOf(x) >= 0)[0]; return { cid: c.id, f }; },
+    badge: "แคว้น · ข้าวยากหมากแพง", title: s => `ฝนแล้งที่${cn(s.ctx.cid)}`,
+    body: s => `ฝนไม่ตกมาสามเดือน นาข้าวรอบ${cn(s.ctx.cid)}แห้งแตกระแหง ราคาข้าวขึ้นสิบเท่า ชาวบ้านเริ่มขุดรากไม้กิน`,
+    choices: [
+      { t: "เปิดยุ้งฉางหลวงแจกจ่าย", h: "ใช้เสบียง 20 · ความสงบ +", need: s => s.food >= 20, ok: { fn: (s, r) => { s.food -= 20; const c = W.cities[s.ctx.cid]; c.order = clamp(c.order + 12, 0, 100); addFame(s, 3, r); return "ชาวบ้านเข้าแถวรับข้าวยาวเหยียด ชื่อของคุณถูกเขียนบนป้ายสรรเสริญหน้าวัด"; } } },
+      { tf: s => s.ctx.f ? `ขอซื้อข้าวจาก${fN(s, s.ctx.f)}` : "ขอซื้อข้าวจากแคว้นข้างเคียง", h: "ใช้เงิน 40", need: s => s.gold >= 40 && !!s.ctx.f, ok: { fn: (s, r) => { s.gold -= 40; addRel(s, s.ctx.f, 6, r); const c = W.cities[s.ctx.cid]; c.order = clamp(c.order + 8, 0, 100); return "เกวียนข้าวจากเมืองข้างเคียงมาถึงทันก่อนชาวบ้านจะอดตาย"; } } },
+      { t: "ปล่อยให้ชาวบ้านช่วยตัวเอง", h: "ประชากรและความสงบลด", ok: { fn: (s, r) => { const c = W.cities[s.ctx.cid]; c.order = clamp(c.order - 15, 0, 100); c.pop = Math.round(c.pop * 0.92); return "ชาวบ้านจำนวนมากอพยพหนีออกจากเมือง ที่เหลือก็สาปแช่งเจ้าเมือง"; } } }
+    ] },
+  { id: "a_mp_trade", req: ruler, minAge: 18, weight: 1, repeat: 3,
+    setup: s => { const t = nearOf(s, c => !noRel(c.owner) && relOf(c.owner) >= 0 && ["ม้าศึก", "เกลือ", "เหล็ก", "ผ้าไหม", "เรือ", "สมุนไพร"].includes(CITY[c.id].spec)); if (!t.length) return false; const cid = rpick(t); return { cid, f: W.cities[cid].owner, sp: CITY[cid].spec }; },
+    badge: "แคว้น · เส้นทางการค้า", title: s => `พ่อค้า${s.ctx.sp}จาก${cn(s.ctx.cid)}`,
+    body: s => `${cn(s.ctx.cid)}ของ${fN(s, s.ctx.f)}ขึ้นชื่อเรื่อง${s.ctx.sp} สมาคมพ่อค้าเสนอให้เปิดเส้นทางการค้าระหว่างสองเมือง ถ้าเจ้าแคว้นทั้งสองฝ่ายตกลง กองคาราวานจะเดินทางได้ทุกฤดู`,
+    choices: [
+      { t: "ทำสัญญาการค้า เก็บภาษีผ่านด่าน", h: "วัดปกครอง · ได้เงินและผูกมิตร", chk: { st: ["politics"], dc: 50 },
+        ok: { fn: (s, r) => { s.gold += 50 + rint(30); addRel(s, s.ctx.f, 8, r); return "กองคาราวานแรกมาถึงพร้อมเสียงระฆังม้า ภาษีด่านเข้าคลังทันที"; } },
+        fail: { fn: (s, r) => { s.gold += 15; return "ข้อตกลงล่าช้า แต่ก็มีพ่อค้ากล้าเสี่ยงมาค้าขายบ้าง"; } } },
+      { tf: s => `ขอแลกเป็น${s.ctx.sp}มาเสริมกองทัพ`, h: "ขวัญทัพ +", ok: { fn: (s, r) => { s.morale = clamp(s.morale + 8, 5, 100); addRel(s, s.ctx.f, 4, r); if (s.ctx.sp === "ม้าศึก" || s.ctx.sp === "เหล็ก") s.troops += 150; return `${s.ctx.sp}ล็อตใหญ่มาถึงค่ายทหาร ขวัญทัพดีขึ้นทันตาเห็น`; } } },
+      { t: "ห้ามค้าขายกับต่างแคว้น กันสายลับ", h: "ปลอดภัยแต่เสียโอกาส", ok: { fn: (s, r) => { addRel(s, s.ctx.f, -5, r); return "ด่านปิดตาย พ่อค้าบ่นกันทั้งตลาด"; } } }
+    ] },
+  { id: "a_mp_bandit", req: s => ruler(s) && s.troops >= 400, minAge: 18, weight: 1, repeat: 3,
+    setup: s => { const t = nearOf(s, c => c.owner === "none"); return t.length ? { cid: t[0], us: ROADS[t[0]].find(n => W.cities[n].owner === "player") } : false; },
+    badge: "ชายแดน · ซ่องโจร", title: s => `โจรจาก${cn(s.ctx.cid)}ปล้นหมู่บ้านชายแดน`,
+    body: s => `${cn(s.ctx.cid)}ไม่มีเจ้าเมืองปกครองมานาน กลายเป็นรังโจรราว ${fmt(W.cities[s.ctx.cid].troops)} คน คืนก่อนพวกมันบุกปล้นหมู่บ้านใกล้${cn(s.ctx.us || ownCities()[0].id)}ของคุณ`,
+    choices: [
+      { t: "ยกทัพไปถอนรากถอนโคน แล้วยึดเมือง", h: "วัดวรยุทธ์+นำทัพ · ได้เมือง", chk: { st: ["martial", "command"], dc: 100 },
+        ok: { fn: (s, r) => { s.troops = Math.round(s.troops * 0.9); addFame(s, 3, r); takeCity(s, s.ctx.cid, r, "ปราบซ่องโจร"); return `รังโจรแตก ชาวเมือง${cn(s.ctx.cid)}ออกมาโปรยดอกไม้ต้อนรับธง${W.playerName}`; } },
+        fail: { fn: (s, r) => { s.troops = Math.round(s.troops * 0.8); return "โจรรู้ภูมิประเทศดีกว่า ทัพของคุณติดกับในหุบเขาจนต้องถอย"; }, st: { health: -6 } } },
+      { t: "ส่งคนไปเกลี้ยกล่อมโจรมาเป็นทหาร", h: "วัดบารมี · ได้ทหาร", chk: { st: ["charisma"], dc: 55 },
+        ok: { fn: (s, r) => { const c = W.cities[s.ctx.cid], n = Math.round(c.troops * 0.5); s.troops += n; c.troops -= n; addFame(s, -1, r); return `หัวหน้าโจรพาลูกน้อง ${fmt(n)} คนมาสวามิภักดิ์`; } },
+        fail: { txt: "ทูตของคุณถูกโกนหัวแล้วไล่กลับมา" } },
+      { t: "จ่ายค่าคุ้มครองให้พวกมันเลิกปล้น", h: "ใช้เงิน 25", need: s => s.gold >= 25, ok: { fn: (s, r) => { s.gold -= 25; addFame(s, -1, r); return "โจรรับเงินแล้วเงียบไปพักใหญ่"; } } }
+    ] },
+  { id: "a_mp_collapse", req: ruler, minAge: 18, weight: 1, repeat: 4,
+    setup: s => { const fs = borderWith(s, f => citiesOf(f).length <= 2 && !["han"].includes(f)); if (!fs.length) return false; const f = fs[0]; return { f, cid: theirEdge(f) }; },
+    badge: "แผ่นดิน · ก๊กเล็กกำลังล่ม", title: s => `${fN(s, s.ctx.f)}เหลือเพียง ${citiesOf(s.ctx.f).length} เมือง`,
+    body: s => `${fN(s, s.ctx.f)}ข้างแคว้นคุณอ่อนแอลงทุกวัน ก๊กใหญ่รอบด้านต่างจ้องจะกลืน ${fL(s, s.ctx.f)}ส่งคนมาขอความคุ้มครองจากคุณ`,
+    choices: [
+      { t: "รับเป็นเมืองขึ้น ให้ส่ง" + "บรรณาการทุกปี", h: "ได้เงิน · เขาเป็นมิตร", ok: { fn: (s, r) => { s.gold += 40; addRel(s, s.ctx.f, 30, r); makePact(s, s.ctx.f, 8, r); return "ทูตก้มกราบรับสัญญาคุ้มครอง พร้อมส่งบรรณาการงวดแรก"; } } },
+      { tf: s => `เกลี้ยกล่อมให้ยก${cn(s.ctx.cid)}มารวมแคว้น`, h: "วัดบารมี · ได้เมืองโดยไม่รบ", chk: { st: ["charisma"], dc: 62 },
+        ok: { fn: (s, r) => { takeCity(s, s.ctx.cid, r, "รวมแคว้นโดยสันติ"); addFame(s, 3, r); return `${fL(s, s.ctx.f)}ยอมยก${cn(s.ctx.cid)}ให้แลกกับยศขุนนางในแคว้นคุณ`; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -10, r); return "อีกฝ่ายเห็นว่าคุณจ้องฮุบแคว้น จึงหันไปพึ่งก๊กอื่นแทน"; } } },
+      { tf: s => `ฉวยโอกาสยกทัพตี${cn(s.ctx.cid)}`, h: "วัดนำทัพ · ได้เมือง เสียชื่อเล็กน้อย", chk: { st: ["command"], dc: 54 }, need: s => !hasPact(s.ctx.f) && s.troops >= 500,
+        ok: { fn: (s, r) => { addRel(s, s.ctx.f, -30, r); addFame(s, -1, r); s.troops = Math.round(s.troops * 0.9); takeCity(s, s.ctx.cid, r, "ตีก๊กเล็กที่กำลังล่ม"); return `${cn(s.ctx.cid)}แตกภายในสามวัน`; } },
+        fail: { fn: (s, r) => { s.troops = Math.round(s.troops * 0.8); addRel(s, s.ctx.f, -20, r); return "แม้จะอ่อนแอ แต่ทหารที่สิ้นหวังก็สู้อย่างไม่คิดชีวิต ทัพของคุณต้องถอย"; } } }
+    ] },
+  { id: "a_mp_ripple", req: s => ruler(s) && !!activeWar(s, 2, 3), minAge: 18, weight: 1.2, repeat: 2, prio: 0.3,
+    setup: s => { const w = activeWar(s, 2, 3); return w ? { g: w.g } : false; },
+    badge: s => `ข่าวศึก · ${GEO_WARS.find(w => w.g === s.ctx.g).name}`, title: "ผลกระทบจากศึกใหญ่ที่ห่างออกไป",
+    body: s => { const w = GEO_WARS.find(x => x.g === s.ctx.g); return `${w.name}ระหว่าง${fN(s, w.A)}กับ${fN(s, w.B)}ลุกลามอยู่ห่างแคว้นคุณไปไม่กี่เมือง ทหารแตกทัพและผู้อพยพเริ่มหลั่งไหลมาถึงชายแดน พ่อค้าข้าวก็เริ่มขึ้นราคา`; },
+    choices: [
+      { t: "รับทหารแตกทัพเข้าเป็นกองกำลัง", h: "ทหาร + · ใช้เงิน 25", need: s => s.gold >= 25, ok: { fn: (s, r) => { s.gold -= 25; const n = 400 + rint(900); s.troops += n; return `ทหารผ่านศึก ${fmt(n)} นายมาสมัครเข้ากองทัพ หลายคนเพิ่งรอดจากความตายมา`; } } },
+      { t: "เปิดเมืองรับผู้อพยพ", h: "ประชากร + · ชื่อเสียง +", ok: { fn: (s, r) => { const c = rpick(ownCities()); c.pop = Math.round(c.pop * 1.05); c.order = clamp(c.order - 4, 0, 100); addFame(s, 2, r); return `ผู้อพยพหลายพันครอบครัวมาตั้งรกรากใน${CITY[c.id].name}`; } } },
+      { t: "ขายข้าวให้ทัพที่กำลังรบในราคาแพง", h: "ได้เงิน · ผูกมิตรฝ่ายที่ซื้อ", ok: { fn: (s, r) => { const w = GEO_WARS.find(x => x.g === s.ctx.g), f = R() < 0.5 ? w.A : w.B, g = 50 + rint(50); s.gold += g; addRel(s, f, 6, r); addFame(s, -1, r); return `${fN(s, f)}ซื้อข้าวจากคุณไป ${g} ตำลึง`; } } },
+      { tf: s => { const w = GEO_WARS.find(x => x.g === s.ctx.g); return `ส่งของขวัญแสดงความยินดีล่วงหน้าแก่${fN(s, w[w.win])}`; }, h: "ใช้เงิน 30 · เดาข้างที่จะชนะ", need: s => s.gold >= 30, ok: { fn: (s, r) => { const w = GEO_WARS.find(x => x.g === s.ctx.g); s.gold -= 30; addRel(s, w[w.win], 12, r, false); return "ผู้รับประทับใจที่คุณมองการณ์ไกล"; } } }
+    ] },
+  /* ---------- คนไร้สังกัด (ดูจากเมืองที่ยืนอยู่และเมืองรอบ ๆ) ---------- */
+  { id: "a_mf_invite", req: s => isFree(s) && s.troops >= 150, minAge: 18, weight: 1.3, repeat: 3,
+    setup: s => { const t = [s.loc, ...ROADS[s.loc]].filter(id => { const c = W.cities[id]; return c.owner === "none" || (c.order < 50 && c.troops < Math.max(600, s.troops)); }); if (!t.length) return false; const cid = t.find(id => W.cities[id].owner === "none") || t[0]; return { cid }; },
+    badge: s => `${cn(s.ctx.cid)} · ผู้เฒ่าเชิญ`, title: s => `ชาวเมือง${cn(s.ctx.cid)}เชิญคุณเป็นผู้นำ`,
+    body: s => { const c = W.cities[s.ctx.cid]; return `${cn(s.ctx.cid)}${c.owner === "none" ? "ไม่มีเจ้าเมืองปกครอง" : `อยู่ใต้${fN(s, c.owner)}แต่ขุนนางกดขี่จนชาวเมืองทนไม่ไหว`} ผู้เฒ่าในเมืองได้ยินชื่อคุณกับผู้ติดตาม ${fmt(s.troops)} คน จึงมาเชิญให้เป็นผู้นำรักษาเมือง`; },
+    choices: [
+      { t: "รับคำเชิญ ปักธงตั้งแคว้นของตัวเอง", h: "วัดบารมี · ได้เมืองแรก", chk: { st: ["charisma"], dc: 54 },
+        ok: { fn: (s, r) => { const c = W.cities[s.ctx.cid], o = c.owner; if (!noRel(o)) addRel(s, o, -20, r); takeCity(s, s.ctx.cid, r, "ชาวเมืองเชิญ"); s.loc = s.ctx.cid; addFame(s, 3, r); return `ชาวเมืองเปิดประตูต้อนรับ ธงของ${W.playerName}ขึ้นเหนือ${cn(s.ctx.cid)}เป็นครั้งแรก`; } },
+        fail: { txt: "ตระกูลใหญ่ในเมืองไม่ยอมรับคนนอก คุณต้องจากไปก่อนจะเกิดเรื่อง", st: { charisma: 1 } } },
+      { t: "ช่วยชาวเมืองแต่ไม่ยึดอำนาจ", h: "ชื่อเสียง +", ok: { fn: (s, r) => { addFame(s, 3, r); const c = W.cities[s.ctx.cid]; c.order = clamp(c.order + 10, 0, 100); return "คุณช่วยปราบโจรและซ่อมกำแพงให้ แล้วจากไปท่ามกลางเสียงอวยพร"; } } },
+      { t: "ปฏิเสธ ยังไม่พร้อมแบกภาระ", h: "ไม่มีอะไรเปลี่ยน", ok: { txt: "ผู้เฒ่าถอนหายใจแล้วเดินกลับไป" } }
+    ] },
+  { id: "a_mf_bandit", req: s => isFree(s) && s.troops >= 300, minAge: 18, weight: 1, repeat: 3,
+    setup: s => { const t = ROADS[s.loc].filter(id => W.cities[id].owner === "none"); return t.length ? { cid: t[0] } : false; },
+    badge: s => `${cn(s.ctx.cid)} · รังโจร`, title: s => `รังโจรที่${cn(s.ctx.cid)}`,
+    body: s => `${cn(s.ctx.cid)}ซึ่งอยู่ติดกับ${cn(s.loc)}ถูกโจรราว ${fmt(W.cities[s.ctx.cid].troops)} คนยึดครอง ชาวบ้านถูกรีดไถจนแทบไม่มีกิน ผู้ติดตามของคุณเริ่มถามว่าจะทนดูอยู่เฉย ๆ หรือ`,
+    choices: [
+      { t: "นำผู้ติดตามบุกรังโจร ยึดเมือง", h: "วัดวรยุทธ์+นำทัพ · ได้เมืองแรก", chk: { st: ["martial", "command"], dc: 96 },
+        ok: { fn: (s, r) => { s.troops = Math.round(s.troops * 0.85); addFame(s, 4, r); takeCity(s, s.ctx.cid, r, "ปราบโจร"); s.loc = s.ctx.cid; return `หัวหน้าโจรถูกคุณฟันตกม้าหน้าประตูเมือง ${cn(s.ctx.cid)}เป็นของ${W.playerName}`; } },
+        fail: { fn: (s, r) => { s.troops = Math.round(s.troops * 0.7); return "โจรมีมากกว่าที่คิด ผู้ติดตามของคุณล้มตายไปหลายคน"; }, st: { health: -8 }, deadly: 0.03 } },
+      { t: "ท้าหัวหน้าโจรดวลตัวต่อตัว", h: "มินิเกมดวล · ชนะได้ทั้งเมืองและโจร", duel: { foe: "bandit", pow: 48 },
+        ok: { fn: (s, r) => { const c = W.cities[s.ctx.cid], n = Math.round(c.troops * 0.5); s.troops += n; c.troops -= n; addFame(s, 3, r); takeCity(s, s.ctx.cid, r, "ดวลชนะหัวหน้าโจร"); s.loc = s.ctx.cid; return `หัวหน้าโจรคุกเข่ายอมแพ้ พาลูกน้อง ${fmt(n)} คนมาสวามิภักดิ์`; } },
+        fail: { txt: "คุณพ่ายในการดวล ต้องถอยออกมาพร้อมบาดแผล", st: { health: -12 } } },
+      { t: "ปล่อยไว้ก่อน", h: "ไม่เสี่ยง", ok: { txt: "คุณยังไม่พร้อม ชาวบ้านมองตามด้วยแววตาผิดหวัง" } }
+    ] },
+  { id: "a_mf_recruit", req: s => isFree(s) && !noRel(W.cities[s.loc].owner), minAge: 18, weight: 1.1, repeat: 3,
+    setup: s => ({ f: W.cities[s.loc].owner }),
+    badge: s => `${cn(s.loc)} · ประกาศรับคน`, title: s => `${fN(s, s.ctx.f)}ประกาศรับคนเก่ง`,
+    body: s => `เจ้าเมือง${cn(s.loc)}ของ${fN(s, s.ctx.f)}ติดประกาศรับคนมีฝีมือเข้ารับราชการ ชื่อของคุณ (${relLabel(s.ctx.f)} ในสายตาก๊กนี้) ไปถึงหูเขาแล้ว เขาจึงส่งคนมาเชิญถึงที่พัก`,
+    choices: [
+      { t: "รับคำเชิญ เข้ารับราชการ", h: "เข้าสังกัด", ok: { fn: (s, r) => { joinLord(s, s.ctx.f, r); addRel(s, s.ctx.f, 10, r, false); return `${fL(s, s.ctx.f)}ส่งตราประจำตำแหน่งมาให้ถึงมือ`; } } },
+      { t: "ขอตำแหน่งให้สมกับฝีมือ", h: "วัดบารมี · ได้ยศสูงขึ้น", chk: { st: ["charisma"], dc: 58 },
+        ok: { fn: (s, r) => { joinLord(s, s.ctx.f, r); promoteRank(s, 1); return `เจ้าเมืองยอมเสนอตำแหน่งที่สูงกว่าเดิม คุณเริ่มชีวิตราชการในตำแหน่ง “${rankLabel(s)}”`; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.f, -8, r, false); return "เจ้าเมืองเห็นว่าคุณถือตัวเกินไป จึงถอนคำเชิญ"; } } },
+      { t: "ปฏิเสธ ยังอยากเป็นอิสระ", h: "อิสระต่อไป", ok: { fn: (s, r) => { addFame(s, 1, r); return "คุณส่งคนผู้นั้นกลับไปพร้อมสุราดีหนึ่งไห"; } } }
+    ] },
+  { id: "a_mf_caravan", req: isFree, minAge: 18, weight: 1, repeat: 2,
+    setup: s => ({ to: rpick(ROADS[s.loc]) }),
+    badge: s => `${cn(s.loc)} → ${cn(s.ctx.to)}`, title: s => `คาราวานไป${cn(s.ctx.to)}จ้างคนคุ้มกัน`,
+    body: s => `พ่อค้าเกลือจะนำกองคาราวานยี่สิบเล่มเกวียนจาก${cn(s.loc)}ไป${cn(s.ctx.to)}ของ${fN(s, W.cities[s.ctx.to].owner)} เส้นทางผ่านป่าที่มีโจรชุกชุม เขาเสนอค่าจ้างงาม`,
+    choices: [
+      { t: "รับงานคุ้มกัน", h: "วัดวรยุทธ์ · ได้เงิน ย้ายเมือง", chk: { st: ["martial"], dc: 48 },
+        ok: { fn: (s, r) => { const g = 25 + rint(25); s.gold += g; s.loc = s.ctx.to; addFame(s, 1, r); return `ขบวนถึง${cn(s.ctx.to)}ครบทุกเล่ม พ่อค้าจ่ายค่าจ้าง ${g} ตำลึง แถมแนะนำคุณให้พ่อค้าในเมืองใหม่รู้จัก`; } },
+        fail: { fn: (s, r) => { s.loc = s.ctx.to; return `โจรซุ่มปล้นจนเสียไปสามเล่ม คุณถึง${cn(s.ctx.to)}พร้อมบาดแผลและค่าจ้างครึ่งเดียว`; }, st: { health: -8 } } },
+      { t: "ปฏิเสธ อยู่ที่เดิม", h: "ไม่มีอะไรเปลี่ยน", ok: { txt: "พ่อค้าไปจ้างคนอื่นแทน" } }
+    ] },
+  { id: "a_mf_courted", req: s => isFree(s) && s.fame >= 20, minAge: 18, weight: 1, repeat: 3,
+    setup: s => { const here = W.cities[s.loc].owner, others = ROADS[s.loc].map(id => W.cities[id].owner).filter(o => !noRel(o) && o !== here); if (noRel(here) || !others.length) return false; return { a: here, b: others[0] }; },
+    badge: s => `${cn(s.loc)} · สองก๊กแย่งตัว`, title: "สองก๊กส่งคนมาทาบทามพร้อมกัน",
+    body: s => `${cn(s.loc)}อยู่ตรงรอยต่อระหว่าง${fN(s, s.ctx.a)}กับ${fN(s, s.ctx.b)} ชื่อเสียงของคุณทำให้ทั้งสองฝ่ายส่งคนมาทาบทามในวันเดียวกัน พร้อมของขวัญไม่น้อยหน้ากัน`,
+    choices: [
+      { tf: s => `เอนเอียงไปทาง${fN(s, s.ctx.a)}`, h: "ได้ใจก๊กนี้", ok: { fn: (s, r) => { s.gold += 20; addRel(s, s.ctx.a, 15, r, false); addRel(s, s.ctx.b, -6, r, false); return `คุณรับของขวัญจาก${fN(s, s.ctx.a)}ไว้ ประตูราชสำนักของเขาเปิดรอคุณเสมอ`; } } },
+      { tf: s => `เอนเอียงไปทาง${fN(s, s.ctx.b)}`, h: "ได้ใจก๊กนี้", ok: { fn: (s, r) => { s.gold += 20; addRel(s, s.ctx.b, 15, r, false); addRel(s, s.ctx.a, -6, r, false); return `คุณรับของขวัญจาก${fN(s, s.ctx.b)}ไว้ ทำให้เจ้าเมือง${cn(s.loc)}ไม่พอใจอยู่บ้าง`; } } },
+      { t: "รับของขวัญทั้งสองฝ่าย แต่ไม่ตอบใคร", h: "วัดกลยุทธ์ · ได้เงินมาก", chk: { st: ["strategy"], dc: 55 },
+        ok: { fn: (s, r) => { s.gold += 45; return "ทั้งสองฝ่ายต่างคิดว่าคุณเอนมาทางตัวเอง"; } },
+        fail: { fn: (s, r) => { addRel(s, s.ctx.a, -10, r, false); addRel(s, s.ctx.b, -10, r, false); addFame(s, -2, r); return "ความแตก ทั้งสองฝ่ายเรียกคุณว่าคนสองหน้า"; } } }
+    ] },
+  { id: "a_mf_refugee", req: isFree, minAge: 18, weight: 0.9, repeat: 3,
+    setup: s => { const t = ROADS[s.loc].filter(id => W.cities[id].order < 62); return t.length ? { from: rpick(t) } : false; },
+    badge: s => `ผู้อพยพจาก${cn(s.ctx.from)}`, title: s => `ผู้อพยพหนีภัยจาก${cn(s.ctx.from)}`,
+    body: s => `${cn(s.ctx.from)}วุ่นวายจนชาวบ้านทนไม่ไหว ผู้อพยพหลายร้อยคนหอบลูกจูงหลานมาถึง${cn(s.loc)} เจ้าเมืองที่นี่ไม่ยอมเปิดประตูรับ พวกเขาจึงหันมามองคุณ`,
+    choices: [
+      { t: "นำพวกเขาตั้งหมู่บ้าน ฝึกชายฉกรรจ์เป็นทหาร", h: "ได้ผู้ติดตาม · ใช้เสบียง", ok: { fn: (s, r) => { const n = 150 + rint(300); s.troops += n; s.food = Math.max(0, s.food - 6); addFame(s, 2, r); return `ชายฉกรรจ์ ${n} คนขอเป็นทหารของคุณ ส่วนคนแก่และเด็กปลูกผักเลี้ยงทัพ`; } } },
+      { t: "แบ่งเงินให้ไปตั้งตัวที่อื่น", h: "ใช้เงิน 15 · ชื่อเสียง +", need: s => s.gold >= 15, ok: { fn: (s, r) => { s.gold -= 15; addFame(s, 3, r); return "ผู้อพยพจากไปพร้อมคำอวยพร ข่าวความใจบุญของคุณกระจายไปทั่ว"; } } },
+      { t: "ไม่ยุ่งเรื่องของคนอื่น", h: "ไม่มีอะไรเปลี่ยน", ok: { txt: "คุณเดินผ่านไป เสียงเด็กร้องไห้ตามหลังมาอีกนาน" } }
+    ] }
+];
+MAP_CARDS.forEach(e => { e.flavor = true; });
+POOL_EVENTS.push(...MAP_CARDS);
+
+/* ===================================================================
  * SYSTEMS — ชื่อเสียง, เกียรติยศตระกูล, ทรัพยากรแต่ละสาย, คำสั่งประจำช่วง
  * =================================================================== */
 const TROOP_CAP = [0, 100, 1000, 5000, 20000, 50000, 100000, 150000];
@@ -5346,24 +5813,37 @@ const ROADS = {};
 })();
 
 const FACTIONS = {
-  han: { name: "ราชสำนักฮั่น", color: "#8a6a22", leader: "พระเจ้าเลนเต้", ch: "漢" },
-  yt: { name: "โจรโพกผ้าเหลือง", color: "#c9a227", leader: "เตียวก๊ก", ch: "黃" },
-  dz: { name: "ตั๋งโต๊ะ", color: "#4a2a1c", leader: "ตั๋งโต๊ะ", hero: "dongzhuo", ch: "董" },
-  ys: { name: "อ้วนเสี้ยว", color: "#6b4a8a", leader: "อ้วนเสี้ยว", ch: "袁" },
-  ysh: { name: "อ้วนสุด", color: "#8a4a6a", leader: "อ้วนสุด", ch: "術" },
-  cc: { name: "โจโฉ", color: "#2a4f7a", leader: "โจโฉ", hero: "caocao", ch: "魏" },
-  lb: { name: "เล่าปี่", color: "#2d6b4c", leader: "เล่าปี่", hero: "liubei", ch: "蜀" },
-  sun: { name: "ตระกูลซุน", color: "#a8241c", leader: "ซุนเกี๋ยน", ch: "吳" },
-  lbiao: { name: "เล่าเปียว", color: "#5c7a3a", leader: "เล่าเปียว", ch: "荊" },
-  lz: { name: "เล่าเจี้ยง", color: "#8a6a3a", leader: "เล่าเจี้ยง", ch: "益" },
-  ma: { name: "ม้าเท้ง", color: "#8a3a2a", leader: "ม้าเท้ง", ch: "馬" },
-  lu: { name: "ลิโป้", color: "#b05a1a", leader: "ลิโป้", hero: "lubu", ch: "呂" },
-  gs: { name: "กงซุนจ้าน", color: "#4a6a7a", leader: "กงซุนจ้าน", ch: "公" },
-  zl: { name: "เตียวลู่", color: "#6a6a3a", leader: "เตียวลู่", ch: "張" },
-  jin: { name: "จิ้น", color: "#333a44", leader: "สุมาเอี๋ยน", ch: "晉" },
-  none: { name: "ไร้เจ้าของ", color: "#9b927f", leader: "หัวหน้าซ่องโจร", ch: "賊" },
-  player: { name: "แคว้นของคุณ", color: "#1c1713", leader: "คุณ", ch: "王" }
+  han: { name: "ราชสำนักฮั่น", color: "#b8912a", th: "ฮั่น", leader: "พระเจ้าเลนเต้", ch: "漢" },
+  yt: { name: "โจรโพกผ้าเหลือง", color: "#e2c044", th: "เหลือง", leader: "เตียวก๊ก", ch: "黃" },
+  dz: { name: "ตั๋งโต๊ะ", color: "#4a2c22", th: "ตั๋ง", leader: "ตั๋งโต๊ะ", hero: "dongzhuo", ch: "董" },
+  ys: { name: "อ้วนเสี้ยว", color: "#6d4aa8", th: "อ้วน", leader: "อ้วนเสี้ยว", ch: "袁" },
+  ysh: { name: "อ้วนสุด", color: "#c2508f", th: "สุด", leader: "อ้วนสุด", ch: "術" },
+  cc: { name: "โจโฉ", color: "#2c5ba6", th: "โจ", leader: "โจโฉ", hero: "caocao", ch: "魏" },
+  lb: { name: "เล่าปี่", color: "#2e8b57", th: "เล่า", leader: "เล่าปี่", hero: "liubei", ch: "蜀" },
+  sun: { name: "ตระกูลซุน", color: "#c0392b", th: "ซุน", leader: "ซุนเกี๋ยน", ch: "吳" },
+  lbiao: { name: "เล่าเปียว", color: "#8fae3a", th: "เปียว", leader: "เล่าเปียว", ch: "荊" },
+  lz: { name: "เล่าเจี้ยง", color: "#e07b1f", th: "เจี้ยง", leader: "เล่าเจี้ยง", ch: "益" },
+  ma: { name: "ม้าเท้ง", color: "#8a4b2e", th: "ม้า", leader: "ม้าเท้ง", ch: "馬" },
+  lu: { name: "ลิโป้", color: "#1f8f9a", th: "ลิ", leader: "ลิโป้", hero: "lubu", ch: "呂" },
+  gs: { name: "กงซุนจ้าน", color: "#6c7a89", th: "กง", leader: "กงซุนจ้าน", ch: "公" },
+  zl: { name: "เตียวลู่", color: "#9b7bd1", th: "ลู่", leader: "เตียวลู่", ch: "張" },
+  jin: { name: "จิ้น", color: "#1f2a44", th: "จิ้น", leader: "สุมาเอี๋ยน", ch: "晉" },
+  none: { name: "ไร้เจ้าของ", color: "#9b927f", th: "โจร", leader: "หัวหน้าซ่องโจร", ch: "賊" },
+  player: { name: "แคว้นของคุณ", color: "#111111", th: "เรา", leader: "คุณ", ch: "王" }
 };
+/* สีและป้ายชื่อภาษาไทยบนแผนที่ — แต่ละก๊กสีไม่ซ้ำกัน ก๊กที่เปลี่ยนชื่อตามยุค (วุย จ๊ก ง่อ) ใช้ป้ายชื่อใหม่ */
+function factionColor(id) { return id === "player" ? "#111111" : (FACTIONS[id] || FACTIONS.none).color; }
+function factionTh(id, y) {
+  if (id === "player") return (typeof S !== "undefined" && S && S.surname) ? S.surname : "เรา";
+  if (id === "cc") return y >= 266 ? "จิ้น" : y >= 220 ? "วุย" : "โจ";
+  if (id === "lb") return y >= 221 ? "จ๊ก" : "เล่า";
+  if (id === "sun") return y >= 222 ? "ง่อ" : "ซุน";
+  return (FACTIONS[id] || FACTIONS.none).th;
+}
+function factionInk(id) {
+  const h = factionColor(id).slice(1), r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 165 ? "#1c1713" : "#fbf3e3";
+}
 /* ชื่อ/ผู้นำเปลี่ยนตามปี */
 function factionName(id, y) {
   if (!id || !FACTIONS[id] && id !== "player" && id !== "cc" && id !== "lb" && id !== "sun") return "ไร้สังกัด";
@@ -5435,7 +5915,7 @@ function worldYear(s) {
   const target = snapOwner(y);
   const moved = [];
   Object.values(W.cities).forEach(c => {
-    const want = target[c.id];
+    const want = heldOwner(c.id, y) || target[c.id];
     if (c.owner === want || c.owner === "player" || c.touched) return;
     // เปลี่ยนมือทีละน้อย เหมือนสงครามที่กินเวลา
     if (R() < 0.45) { const from = c.owner; c.owner = want; c.troops = Math.round(c.pop * 0.05); moved.push([c, from, want]); }
@@ -5450,6 +5930,7 @@ function worldYear(s) {
     c.order = clamp(c.order + (c.order < 60 ? 2 : -1), 0, 100);
   });
   if (R() < 0.6) spawnWanderers(y, 2);
+  if (typeof diploYear === "function") diploYear(s);
   W.lastYear = y;
 }
 
@@ -5559,12 +6040,14 @@ function lifeTurn(s) {
   }
   // AI โจมตีเมืองของเรา
   own.forEach(c => {
-    const foes = ROADS[c.id].map(id => W.cities[id]).filter(x => x.owner !== "player" && x.owner !== "none" && x.troops > c.troops * 1.3);
-    if (foes.length && R() < 0.07) {
-      const f = rpick(foes);
+    const foes = ROADS[c.id].map(id => W.cities[id]).filter(x => x.owner !== "player" && x.owner !== "none" && foeAttackMult(x.owner) > 0 && x.troops > c.troops * foeRatio(x.owner));
+    const f = foes.length ? rpick(foes) : null;
+    if (f && R() < 0.07 * foeAttackMult(f.owner)) {
       if ((own.length === 1 || c.id === s.loc) && !s._siege && s.adult) { s._siege = { cid: c.id, foe: f.id }; return; }
       const defBonus = s.loc === c.id ? s.troops : 0;
-      const atk = f.troops * 0.6 * (0.8 + R() * 0.4), def = (c.troops + defBonus) * (1 + c.wall / 100);
+      const help = allyAid(s, c.id);
+      if (help) notes.push(`${factionName(help.who, s.year)}พันธมิตรส่งทหาร ${fmt(help.aid)} นายมาช่วยรักษา${CITY[c.id].name}`);
+      const atk = f.troops * 0.6 * (0.8 + R() * 0.4), def = (c.troops + defBonus + (help ? help.aid : 0)) * (1 + c.wall / 100);
       if (atk > def) {
         c.owner = f.owner; c.troops = Math.round(f.troops * 0.3); f.troops = Math.round(f.troops * 0.6);
         if (s.loc === c.id) { s.troops = Math.round(s.troops * 0.4); s.loc = ROADS[c.id].find(id => W.cities[id].owner === "player") || s.loc; }
@@ -5576,6 +6059,7 @@ function lifeTurn(s) {
       }
     }
   });
+  diploTurn(s, notes);
   s.gold = Math.round(s.gold); s.food = Math.round(s.food);
   syncFaction(s);
   autoAssign(s);
@@ -5600,11 +6084,13 @@ function cityActions(s) {
   if (mine && c.troops > 600) A.push({ id: "draw", ico: "調", name: "ถอนทหารจากกำแพง", desc: `รับ ${fmt(Math.round(c.troops / 2))} นายเข้าทัพ` });
   if (s.lord && s.rank >= 3) A.push({ id: "rebel", ico: "叛", name: "แยกตัวตั้งตน", desc: "พาทหารที่ภักดีออกไป · ชื่อเสียงลด" });
   if (!s.lord && ownCities().length >= 6 && !s.flags.emperor && s.troops + ownCities().reduce((a, x) => a + x.troops, 0) >= 60000) A.push({ id: "throne", ico: "帝", name: "สร้างแท่นบูชาฟ้า ปราบดาภิเษก", desc: "ต้องบารมีและความชอบธรรม", chance: throneChance(s) });
+  if (!s.lord && ownCities().length && s.gold >= 20) borderFactions(s).slice(0, 3).forEach(f => A.push({ id: "envoy:" + f, ico: "使", name: `ส่งทูตไป${factionName(f, s.year)}`, desc: `${relLabel(f)} · ใช้เงิน 20`, chance: envoyChance(s, f) }));
   A.push({ id: "rest", ico: "休", name: "พักผ่อน", desc: "สุขภาพ +, ขวัญทัพ +" });
   return A;
 }
+const envoyChance = (s, f) => clamp(Math.round(45 + (s.stats.charisma - 45) * 0.9 + relOf(f) / 4 - (hasPact(f) ? 0 : 0) - (s.flags.pactBreaker ? 15 : 0) + DIFF[s.diff].chance), 5, 95);
 const workPay = s => 8 + Math.round(Math.max(s.stats.politics, s.stats.martial, s.stats.charisma) / 6);
-const serveChance = s => clamp(Math.round(35 + s.fame / 2 + Math.max(s.stats.martial + s.stats.command, s.stats.strategy + s.stats.politics) / 6 + DIFF[s.diff].chance), 5, 95);
+const serveChance = s => clamp(Math.round(35 + relOf(W.cities[s.loc].owner) / 5 + s.fame / 2 + Math.max(s.stats.martial + s.stats.command, s.stats.strategy + s.stats.politics) / 6 + DIFF[s.diff].chance), 5, 95);
 const missionChance = s => clamp(Math.round(45 + (Math.max(s.stats.command, s.stats.politics) - 40) * 0.8 + DIFF[s.diff].chance), 5, 95);
 const throneChance = s => clamp(Math.round(30 + (s.stats.charisma - 60) + s.legit / 3 + s.fame / 4 + DIFF[s.diff].chance), 5, 90);
 function recruitAmt(s) {
@@ -5617,6 +6103,18 @@ function doAction(s, id) {
   const c = W.cities[s.loc], res = { text: "", delta: {}, notes: [], ok: true, chance: null };
   const st = d => Object.assign(res.delta, addStats(s, d));
   const roll = ch => { res.chance = ch; res.ok = 1 + rint(100) <= ch; return res.ok; };
+  if (id.startsWith("envoy:")) {
+    const f = id.slice(6); s.gold -= 20;
+    if (roll(envoyChance(s, f))) {
+      const n = 10 + rint(8); addRel(s, f, n, res);
+      res.text = rpick([`ทูตของคุณนำแพรไหมและม้าดีไปถวาย${factionLeader(f, s.year)} ได้รับการต้อนรับอย่างอบอุ่น`, `${factionLeader(f, s.year)}เลี้ยงรับรองทูตของคุณสามวันสามคืน แล้วส่งของขวัญกลับมา`, `ทูตของคุณพูดจาคมคาย ขุนนางของ${factionName(f, s.year)}หลายคนเริ่มเห็นใจแคว้นคุณ`]);
+      st({ charisma: 1 });
+    } else {
+      addRel(s, f, -4, res);
+      res.text = rpick([`${factionLeader(f, s.year)}ไม่ยอมให้ทูตเข้าเฝ้า ของกำนัลถูกส่งคืน`, `ทูตของคุณพูดพลั้งปาก ทำให้ราชสำนัก${factionName(f, s.year)}ไม่พอใจ`]);
+    }
+    return res;
+  }
   switch (id) {
     case "work": s.gold += workPay(s); res.text = `ได้เงิน ${workPay(s)} ตำลึง`; st({ [s.stats.politics >= s.stats.martial ? "politics" : "martial"]: 1 }); break;
     case "train": st({ martial: 2, command: 1 + rint(2) }); s.morale = clamp(s.morale + 4, 5, 100); res.text = "คุณซ้อมทวนและกระบวนทัพจนค่ำ"; break;
@@ -5735,6 +6233,7 @@ function tacticOdds(s, cid, t) {
 /* ทำศึก: duelWin = true/false เฉพาะท่าดวล */
 function fightCity(s, cid, t, duelWin) {
   const b = battleSetup(s, cid), c = b.c, res = { text: "", notes: [], extra: [], delta: {}, ok: false, chance: null, battle: true };
+  if (!s.lord && !noRel(c.owner)) { if (hasPact(c.owner)) breakPact(s, c.owner, res); addRel(s, c.owner, -12, null); }
   const sc = (x) => clamp(x + DIFF[s.diff].chance, 5, 95);
   let mult = 1, wallF = b.wallF, cas = 1, tacticOk = null;
   if (t === "siege") { mult = 1.15; wallF = 1 + (b.wallF - 1) * 0.35; s.morale = clamp(s.morale - 6, 5, 100); }
@@ -5757,6 +6256,7 @@ function fightCity(s, cid, t, duelWin) {
       res.text = `ธงของ${factionName(s.lord, s.year)}ปักบนกำแพง${CITY[cid].name}! ผลงานของคุณถูกรายงานถึงเจ้านาย`;
       if (s.merit >= 4 + s.rank * 2 && s.rank < 6) { s.merit = 0; promoteRank(s, 1); res.notes.push(`เลื่อนยศเป็น “${rankLabel(s)}”`); }
     } else {
+      if (!noRel(from)) addRel(s, from, -15, res);
       foundRealm(s); c.owner = "player"; c.troops = Math.round(s.troops * 0.15); s.troops -= c.troops; c.order = clamp(c.order - 10, 0, 100); addFame(s, 5, res);
       res.text = `คุณยึด${CITY[cid].name}ได้สำเร็จ ธง${W.playerName}โบกสะบัดเหนือกำแพง`;
     }
@@ -5787,6 +6287,137 @@ function canAttack(s, cid) {
   if (c.owner === "player" || (s.lord && c.owner === s.lord)) return false;
   return true;
 }
+
+/* ===================================================================
+ * DIPLO — การทูต: ความสัมพันธ์ระหว่างก๊กต่าง ๆ กับผู้เล่น (−100 ถึง +100)
+ * ใช้กับแคว้นของผู้เล่นเป็นหลัก ส่วนคนไร้สังกัด ค่านี้คือ "ชื่อเสียงในสายตาก๊กนั้น" (มีผลกับการขอรับราชการ)
+ * W.rel[f] = คะแนน · W.pact[f] = ปีที่สัญญาไม่รุกรานหมดอายุ · W.hold[cid] = {f, until} ประวัติศาสตร์ที่ถูกพลิก
+ * =================================================================== */
+const REL_TIERS = [
+  { k: "ally", min: 60, name: "พันธมิตร", ico: "🤝", atk: 0 },
+  { k: "friend", min: 20, name: "เป็นมิตร", ico: "🙂", atk: 0.35 },
+  { k: "neutral", min: -19, name: "เฉย ๆ", ico: "😐", atk: 1 },
+  { k: "dislike", min: -59, name: "ไม่ชอบ", ico: "😠", atk: 1.6 },
+  { k: "enemy", min: -101, name: "ศัตรูคู่แค้น", ico: "⚔️", atk: 2.4 }
+];
+const noRel = f => !f || f === "player" || f === "none";
+function relOf(f) { return noRel(f) ? 0 : ((W.rel || {})[f] || 0); }
+function relTier(f) { const v = relOf(f); return REL_TIERS.find(t => v >= t.min); }
+function relLabel(f) { const t = relTier(f), v = relOf(f); return `${t.ico} ${t.name} (${v > 0 ? "+" : ""}${v})`; }
+function hasPact(f) { return !!(W.pact && W.pact[f] && W.pact[f] > S_year()); }
+const S_year = () => (typeof S !== "undefined" && S ? S.year : W.lastYear);
+
+/* คู่ปรับตามยุค: ผูกมิตรกับฝ่ายหนึ่ง อีกฝ่ายก็ไม่พอใจ */
+function rivalsOf(f, y) {
+  const R0 = [];
+  const add = (a, b, from, to) => { if (y >= from && y <= to) { if (f === a) R0.push(b); if (f === b) R0.push(a); } };
+  add("cc", "ys", 190, 207); add("cc", "lu", 194, 199); add("cc", "lb", 199, 263); add("cc", "sun", 200, 280);
+  add("cc", "ma", 205, 215); add("lb", "sun", 215, 223); add("ys", "gs", 190, 199); add("cc", "ysh", 195, 199);
+  add("dz", "ys", 189, 192); add("dz", "cc", 189, 192); add("dz", "sun", 189, 192); add("han", "yt", 184, 190);
+  add("lb", "lz", 212, 214); add("cc", "zl", 214, 215); add("jin", "sun", 266, 280);
+  return R0;
+}
+
+/* เปลี่ยนค่าความสัมพันธ์ · spread = กระทบคู่ปรับของก๊กนั้นด้วย */
+function addRel(s, f, n, res, spread) {
+  if (noRel(f) || !n) return;
+  W.rel = W.rel || {};
+  const before = relTier(f).k;
+  W.rel[f] = clamp(Math.round(relOf(f) + n), -100, 100);
+  const after = relTier(f);
+  const out = res && (res.extra || res.notes);
+  if (out) out.push(`ความสัมพันธ์กับ${factionName(f, s.year)} ${n > 0 ? "+" : ""}${Math.round(n)} → ${after.ico} ${after.name}`);
+  if (before !== after.k && after.k === "ally") addNews(s.year, `${W.playerName || s.name} กับ${factionName(f, s.year)}ทำสัตย์เป็นพันธมิตร`, true);
+  if (spread !== false) rivalsOf(f, s.year).forEach(r => { if (citiesOf(r).length) { W.rel[r] = clamp(Math.round(relOf(r) + (n > 0 ? -n * 0.4 : -n * 0.3)), -100, 100); } });
+}
+function makePact(s, f, years, res) {
+  W.pact = W.pact || {}; W.pact[f] = s.year + years;
+  (res && (res.extra || res.notes) || []).push(`ทำสัญญาไม่รุกรานกับ${factionName(f, s.year)}ถึง ค.ศ. ${s.year + years}`);
+}
+/* ฉีกสัญญา: เสียชื่อกับทุกก๊ก */
+function breakPact(s, f, res) {
+  if (!hasPact(f)) return;
+  delete W.pact[f];
+  addRel(s, f, -40, res, false);
+  Object.keys(W.rel || {}).forEach(k => { if (k !== f) W.rel[k] = clamp(W.rel[k] - 10, -100, 100); });
+  addFame(s, -8, res);
+  addNews(s.year, `${W.playerName || s.name} ฉีกสัญญาไม่รุกรานกับ${factionName(f, s.year)} ทั่วแผ่นดินติฉินถึงความไม่มีสัจจะ`, true);
+  s.flags.pactBreaker = (s.flags.pactBreaker || 0) + 1;
+}
+
+/* ก๊กที่มีชายแดนติดกับแคว้นของผู้เล่น (หรือเมืองที่ผู้เล่นอยู่ ถ้ายังไม่มีแคว้น) */
+function borderFactions(s) {
+  const mine = ownCities().map(c => c.id), base = mine.length ? mine : [s.loc];
+  const set = {};
+  base.forEach(id => [id, ...ROADS[id]].forEach(n => { const o = W.cities[n].owner; if (!noRel(o)) set[o] = (set[o] || 0) + 1; }));
+  return Object.keys(set).sort((a, b) => set[b] - set[a]);
+}
+/* เมืองของ f ที่ติดกับเมืองเรา: [เมืองเขา, เมืองเรา] */
+function borderPair(f) {
+  for (const c of ownCities()) { const n = ROADS[c.id].find(id => W.cities[id].owner === f); if (n) return [n, c.id]; }
+  return null;
+}
+const playerPower = s => (s.troops || 0) + ownCities().reduce((a, c) => a + c.troops, 0);
+
+/* นิสัยเจ้าก๊ก: ค่าความสัมพันธ์ไหลเองปีละครั้ง */
+function leaderMood(s, f) {
+  const y = s.year;
+  if (f === "cc" && y < 220) return s.fame >= 60 ? -3 : 0;                 // โจโฉระแวงคนเก่ง
+  if (f === "lb" && y < 223) return s.fame >= 35 && !s.flags.pactBreaker ? 2 : 0; // เล่าปี่ชอบคนมีคุณธรรม
+  if (f === "lu") return rint(17) - 8;                                       // ลิโป้กลับกลอก
+  if (f === "ys") return s.classId >= 4 ? 2 : -2;                            // อ้วนเสี้ยวถือตระกูล
+  if (f === "sun") return relOf("cc") <= -20 ? 2 : 0;                        // ซุนกวนหาเพื่อนต้านเหนือ
+  if (f === "dz") return -1;
+  return 0;
+}
+function diploYear(s) {
+  W.rel = W.rel || {};
+  if (!ownCities().length && !Object.keys(W.rel).length) return;
+  aliveFactions().forEach(f => {
+    if (noRel(f)) return;
+    let v = relOf(f);
+    v += v > 0 ? -3 : v < 0 ? 3 : 0;            // ความแค้นและบุญคุณจางลง
+    if (Math.abs(v) < 3) v = 0;
+    if (ownCities().length) v += leaderMood(s, f);
+    W.rel[f] = clamp(v, -100, 100);
+  });
+  if (W.pact) Object.keys(W.pact).forEach(f => { if (W.pact[f] <= s.year) delete W.pact[f]; });
+}
+
+/* ทุกครึ่งปี: การค้ากับพันธมิตร ไส้ศึกจากก๊กที่ไม่ชอบ */
+function diploTurn(s, notes) {
+  const own = ownCities(); if (!own.length || s.lord) return;
+  borderFactions(s).forEach(f => {
+    const t = relTier(f).k;
+    if (t === "ally") { const g = 6 + Math.min(10, citiesOf(f).length); s.gold += g; if (R() < 0.25) notes.push(`กองคาราวานจาก${factionName(f, s.year)}นำบรรณาการมิตรภาพ ${g} ตำลึง`); }
+    else if (t === "friend") s.gold += 2;
+    else if ((t === "dislike" && R() < 0.05) || (t === "enemy" && R() < 0.1)) {
+      const p = borderPair(f); if (!p) return;
+      const c = W.cities[p[1]]; c.order = clamp(c.order - 8, 0, 100);
+      notes.push(`ไส้ศึกของ${factionName(f, s.year)}ปลุกปั่นชาวเมือง${CITY[p[1]].name} ความสงบลดลง`);
+    }
+  });
+}
+/* AI เลือกจะตีเราไหม: ดูความสัมพันธ์และสัญญา */
+function foeAttackMult(f) { return hasPact(f) ? 0 : relTier(f).atk; }
+function foeRatio(f) { const k = relTier(f).k; return k === "enemy" ? 1.0 : k === "dislike" ? 1.15 : 1.3; }
+/* พันธมิตรส่งทหารมาช่วยตอนเมืองเราถูกตี */
+function allyAid(s, cid) {
+  let aid = 0, who = null;
+  ROADS[cid].forEach(n => { const o = W.cities[n].owner; if (!noRel(o) && relTier(o).k === "ally") { const a = Math.round(W.cities[n].troops * 0.35); if (a > aid) { aid = a; who = o; } } });
+  return aid ? { aid, who } : null;
+}
+
+/* พลิกประวัติศาสตร์: ให้ก๊ก f ครองเมืองเหล่านี้ไว้ถึงปี until (worldYear จะไม่ดึงคืนตามประวัติศาสตร์) */
+function holdHistory(s, f, cids, until) {
+  W.hold = W.hold || {};
+  cids.forEach(id => {
+    const c = W.cities[id]; if (!c || c.owner === "player") return;
+    W.hold[id] = { f, until };
+    if (c.owner !== f) { c.owner = f; c.troops = Math.max(c.troops, Math.round(c.pop * 0.05)); }
+  });
+}
+function heldOwner(cid, y) { const h = W.hold && W.hold[cid]; return h && y < h.until ? h.f : null; }
 
 /* ===================================================================
  * ENGINE — กลไกเกม: สุ่ม, ความยาก, ทอยเต๋า, ครอบครัว, ทายาท, ความสำเร็จ, เซฟ
@@ -7568,8 +8199,8 @@ function drawMap() {
     nodes += `<g class="city ${here ? "here" : ""} ${adj ? "adj" : ""} ${selCity === c.id ? "sel" : ""}" data-c="${c.id}" transform="translate(${d.x},${d.y})">
       <circle r="${r + 12}" class="hit"/>
       ${here ? `<circle r="${r + 7}" class="ring"/>` : ""}
-      <rect x="${-r}" y="${-r}" width="${2 * r}" height="${2 * r}" rx="3" fill="${c.owner === "player" ? "#a8241c" : f.color}" class="seal"/>
-      <text class="ch" y="${r * 0.38}" font-size="${r * 1.05}">${c.owner === "player" ? "王" : f.ch}</text>
+      <rect x="${-r}" y="${-r}" width="${2 * r}" height="${2 * r}" rx="3" fill="${factionColor(c.owner)}" class="seal ${c.owner === "player" ? "mine" : ""}"/>
+      ${(t => `<text class="ch th" y="${r * 0.32}" font-size="${Math.min(r * 0.95, (2 * r - 4) / Math.max(1.6, t.length * 0.55))}" style="fill:${c.owner === "player" ? "#e8c35a" : factionInk(c.owner)}">${esc(t)}</text>`)(factionTh(c.owner, y))}
       <text class="nm" y="${r + 15}">${d.name}</text>
       ${here ? `<path d="M${r + 2} ${-r - 2} l0 -26 l18 7 l-18 7" class="flag"/>` : ""}
     </g>`;
@@ -7587,6 +8218,12 @@ function drawMap() {
     <text class="rv" x="540" y="262">ฮวงโห</text><text class="rv" x="610" y="567">แยงซี</text>
     ${roads}${nodes}
   </svg>`;
+}
+/* แถบสีก๊กใต้แผนที่ เฉพาะก๊กที่ยังมีเมืองอยู่ เรียงตามจำนวนเมือง */
+function mapLegend() {
+  const n = {}; Object.values(W.cities).forEach(c => { n[c.owner] = (n[c.owner] || 0) + 1; });
+  return Object.keys(n).sort((a, b) => (b === "player") - (a === "player") || n[b] - n[a]).map(id =>
+    `<span class="lg"><i style="background:${factionColor(id)}"></i>${esc(id === "none" ? "ไร้เจ้าของ/โจร" : factionName(id, S.year))} <small>${n[id]}${!noRel(id) && !S.lord && ownCities().length && relTier(id).k !== "neutral" ? " " + relTier(id).ico : ""}${hasPact(id) ? " 📜" : ""}</small></span>`).join("");
 }
 
 function resStrip(s) {
@@ -7625,6 +8262,7 @@ function renderGame() {
 
   // แผนที่
   $("mapWrap").innerHTML = drawMap();
+  if ($("mapLegend")) $("mapLegend").innerHTML = mapLegend();
   $("mapWrap").querySelectorAll(".city").forEach(g => g.onclick = () => { selCity = g.dataset.c; Sound.tap(); openCity(selCity); });
   $("hereCard").innerHTML = s.pending ? "" : hereHTML(s);
   bindHere();
@@ -7686,7 +8324,7 @@ function renderEventCard(box) {
 function hereHTML(s) {
   if (!s.adult) return "";
   const c = W.cities[s.loc], d = CITY[s.loc];
-  const near = ROADS[s.loc].map(id => `<button class="nb" data-go="${id}"><i style="background:${W.cities[id].owner === "player" ? "#a8241c" : FACTIONS[W.cities[id].owner].color}"></i>${CITY[id].name}</button>`).join("");
+  const near = ROADS[s.loc].map(id => `<button class="nb" data-go="${id}"><i style="background:${factionColor(W.cities[id].owner)}"></i>${CITY[id].name}</button>`).join("");
   return `<div class="here">
     <div class="here-h"><div><div class="kicker">คุณอยู่ที่</div><h3>${d.name} <small>${d.region}</small></h3></div>
       <button class="btn ghost" id="hInfo" style="min-height:38px;padding:6px 12px;font-size:13.5px">ข้อมูลเมือง</button></div>
@@ -7713,8 +8351,8 @@ function openCity(cid) {
   const row = (a, b) => `<div><span>${a}</span><b>${b}</b></div>`;
   $("ov").classList.remove("hidden");
   $("sheet").innerHTML = `<div class="kicker">${esc(d.region)}</div>
-    <div class="city-h"><span class="cseal" style="background:${f === "player" ? "#a8241c" : FACTIONS[f].color}">${f === "player" ? "王" : FACTIONS[f].ch}</span>
-      <div><h3 style="font-size:22px">${d.name}</h3><div class="muted" style="font-size:13.5px">${esc(factionName(f, s.year))} · ผู้นำ ${esc(factionLeader(f, s.year))}</div></div></div>
+    <div class="city-h"><span class="cseal th" style="background:${factionColor(f)};color:${f === "player" ? "#e8c35a" : factionInk(f)}">${esc(factionTh(f, s.year))}</span>
+      <div><h3 style="font-size:22px">${d.name}</h3><div class="muted" style="font-size:13.5px">${esc(factionName(f, s.year))} · ผู้นำ ${esc(factionLeader(f, s.year))}</div>${!noRel(f) && s.adult && !s.lord ? `<div style="font-size:13.5px;margin-top:2px">${ownCities().length ? "ท่าทีต่อแคว้นคุณ" : "มองคุณว่า"}: <b>${esc(relLabel(f))}</b>${hasPact(f) ? ` · สัญญาไม่รุกรานถึง ค.ศ. ${W.pact[f]}` : ""}</div>` : ""}</div></div>
     <div class="cgrid">${row("ประชากร", fmt(c.pop))}${row("ทหารรักษาเมือง", fmt(c.troops))}${row("กำแพง", c.wall)}${row("ความสงบ", c.order)}${row("ของดีประจำเมือง", d.spec)}${row("ทางเชื่อม", ROADS[cid].length + " เส้น")}</div>
     ${leaderHero ? "" : ""}
     ${heroes.length || wand.length ? `<div class="sec-h">ผู้คนในเมือง</div><div class="people">${heroes.map(h => `<div class="pp">${pf(heroSpec(h.hero))}<b>${Portrait.HEROES[h.hero].name}</b><small>${h.faction ? esc(factionName(h.faction, s.year)) : "ผู้เร้นกาย"}</small></div>`).join("")}${wand.map(w => `<div class="pp">${pf({ seed: w.seed, gender: w.gender, role: w.role, age: 30 })}<b>${esc(w.name)}</b><small>${esc(w.kind)}</small></div>`).join("")}</div>` : ""}
