@@ -1420,7 +1420,7 @@ const HIST_EVENTS = [
       { t: "เอ่ยชื่ออ้วนเสี้ยว ผู้มีทัพมากที่สุด", h: "เล่นตามน้ำ",
         ok: { txt: "โจโฉส่ายหน้า “ใจเล็กแต่ทะเยอทะยานใหญ่ ไม่ใช่วีรบุรุษ” แล้วสอนคุณดูคนอีกครึ่งคืน", st: { politics: 4, strategy: 3 } } }
     ] },
-  { id: "h_200_guandu", minY: 200, maxY: 201, minAge: 16,
+  { id: "h_200_guandu", side: ["wei"], minY: 200, maxY: 201, minAge: 16,
     badge: "ค.ศ. 200 · ศึกกัวต๋อ", title: "คลังเสบียงอูเฉาในคืนหนาวจัด",
     body: "สองทัพใหญ่ยันกันที่กัวต๋อมาหลายเดือน เสบียงร่อยหรอจนทหารเริ่มกินหนังม้า แล้วข่าวลับก็มาถึง คลังเสบียงทั้งหมดของอ้วนเสี้ยวอยู่ที่อูเฉา คุ้มกันเพียงเบาบาง",
     npc: { name: "นายทหารเวรยาม", role: "สมรภูมิกัวต๋อ", seed: 29, gender: "M", type: "general" },
@@ -1446,7 +1446,7 @@ const HIST_EVENTS = [
         ok: { txt: "ไฟลุกท่วมเรือนแต่กวนอูหนีออกมาได้ อย่างน้อยเจ้านายคุณก็พอใจที่คุณกล้าลงมือ", st: { strategy: 4 }, rank: 1, bond: { guanyu: -3 } },
         fail: { txt: "แผนรั่วไหล กวนอูบุกออกมาฟันลูกน้องคุณตายเกลื่อน ตัวคุณรอดเพราะซ่อนในบ่อน้ำ", st: { health: -14, charisma: -5 }, bond: { guanyu: -3 } } }
     ] },
-  { id: "h_207_cottage", minY: 206, maxY: 207, minAge: 18,
+  { id: "h_207_cottage", side: ["shu"], minY: 206, maxY: 207, minAge: 18,
     badge: "ค.ศ. 207 · กระท่อมหญ้าหลงจง", title: "เยือนกระท่อมหญ้าเป็นครั้งที่สาม",
     body: "หิมะตกหนักในหุบเขาหลงจง ชายหนุ่มในกระท่อมหลับอยู่ เล่าปี่ยืนรอหน้าประตูอย่างสงบ ส่วนคุณที่ติดตามมาด้วยกำลังจะตัดสินใจบางอย่าง",
     npc: { hero: "zhugeliang", name: "ขงเบ้ง", role: "มังกรหลับแห่งหลงจง" },
@@ -1525,7 +1525,7 @@ const HIST_EVENTS = [
         ok: { txt: "ทัพใหญ่ถอยร่นเพราะขาดเสบียง คุณยึดม้าศึกกลับมาได้มหาศาล", st: { strategy: 7, command: 5 }, rank: 1, deed: "ตัดเสบียงชนะศึกยุทธศาสตร์" },
         fail: { txt: "ยันกันจนถึงฤดูหนาว ทั้งสองฝ่ายถอนทัพ เมืองปลอดภัยแต่ไม่มีใครได้อะไร", st: { strategy: 3 } } }
     ] },
-  { id: "h_219_fancheng", minY: 219, maxY: 220, minAge: 18,
+  { id: "h_219_fancheng", side: ["shu", "wu"], minY: 219, maxY: 220, minAge: 18,
     badge: "ค.ศ. 219 · เมืองอ้วนเสีย", title: "น้ำท่วมทัพเจ็ดกองและแผลธนูอาบยาพิษ",
     body: "ฝนตกติดต่อสิบวัน กวนอูเปิดเขื่อนท่วมเจ็ดทัพของอิกิ๋ม แต่ตัวเขาเองถูกธนูอาบยาพิษที่แขน ขณะที่ทางใต้ ลิบองแห่งง่อกำลังปลอมตัวเป็นพ่อค้าเข้ายึดเกงจิ๋ว",
     npc: { hero: "guanyu", name: "กวนอู", role: "แม่ทัพผู้คุมเกงจิ๋ว" },
@@ -1550,7 +1550,19 @@ const HIST_EVENTS = [
         ok: { txt: "ทั้งห้องเงียบกริบ โจผีน้ำตาซึมแล้วไว้ชีวิตน้องชาย คนทั้งแผ่นดินพูดถึงความกล้าของคุณ", st: { charisma: 9 }, deed: "ทูลขอชีวิตโจสิดในวันกวีเจ็ดก้าว" },
         fail: { txt: "โจผีหน้าบึ้ง สั่งย้ายคุณไปรักษาด่านชายแดนห่างไกล", rank: -1, st: { charisma: 3 } } }
     ] },
-  { id: "h_222_yiling", minY: 221, maxY: 223, minAge: 16,
+  { id: "h_222_yiling_wu", side: ["wu"], minY: 221, maxY: 223, minAge: 16,
+    badge: "ค.ศ. 222 · ศึกอิเหลง", title: "แม่ทัพหนุ่มสั่งให้รอถึงหน้าร้อน",
+    body: "ทัพจ๊กของเล่าปี่บุกมาแก้แค้นให้กวนอู ลกซุนแม่ทัพหนุ่มของง่อสั่งถอยแล้วถอยอีกจนขุนพลรุ่นพี่ด่าว่าขลาด ตอนนี้ทัพจ๊กตั้งค่ายยาวเจ็ดร้อยลี้ในป่าทึบหลบร้อน ลกซุนเรียกคุณเข้ากระโจม",
+    npc: { name: "ลกซุน", role: "แม่ทัพใหญ่แห่งง่อ", seed: 22, gender: "M", type: "scholar" },
+    choices: [
+      { t: "อาสานำหน่วยถือคบเพลิงเผาค่ายจ๊กคืนลมแรง", h: "วัดวรยุทธ์+กลยุทธ์", chk: { st: ["martial", "strategy"], dc: 104 },
+        ok: { txt: "ไฟลามค่ายจ๊กทีละค่ายจนสว่างทั้งป่า เล่าปี่หนีไปเมืองเป๊กเต้ หน่วยของคุณได้ความชอบชั้นหนึ่ง", st: { martial: 5, strategy: 6 }, rank: 1, deed: "จุดไฟเผาค่ายเจ็ดร้อยลี้ที่อิเหลง" },
+        fail: { txt: "ลมเปลี่ยนทิศกลางทาง หน่วยของคุณติดอยู่ในกองไฟของตัวเอง", st: { health: -16 }, deadly: 0.08 } },
+      { t: "ช่วยลกซุนคุมขุนพลรุ่นพี่ที่ไม่ยอมฟังคำสั่ง", h: "วัดปกครอง+บารมี", chk: { st: ["politics", "charisma"], dc: 98 },
+        ok: { txt: "ขุนพลรุ่นพี่ยอมรอจนวันโจมตี ชัยชนะครั้งใหญ่ของง่อมีชื่อคุณอยู่ในรายงาน", st: { politics: 5, charisma: 5 }, rank: 1 },
+        fail: { txt: "ขุนพลรุ่นพี่ไม่พอใจที่คุณเข้าข้างแม่ทัพเด็ก", st: { charisma: -2 } } }
+    ] },
+  { id: "h_222_yiling", side: ["shu"], minY: 221, maxY: 223, minAge: 16,
     badge: "ค.ศ. 222 · ศึกอิเหลง", title: "ค่ายเจ็ดร้อยลี้ใต้ร่มไม้ในหน้าร้อน",
     body: "แผ่นดินแยกเป็นวุย จ๊ก ง่อ อย่างสมบูรณ์ เล่าปี่ยกทัพแก้แค้นให้กวนอู ตั้งค่ายเรียงยาวเจ็ดร้อยลี้ในป่าทึบเพื่อหลบร้อน คุณสังเกตว่าลมเริ่มเปลี่ยนทิศ",
     npc: { name: "ลกซุน", role: "แม่ทัพหนุ่มแห่งง่อ", seed: 22, gender: "M", type: "scholar" },
@@ -1562,7 +1574,7 @@ const HIST_EVENTS = [
         ok: { txt: "หน่วยของคุณตีมือเพลิงของลกซุนแตกกระเจิง", st: { martial: 5, strategy: 5 }, rank: 1 },
         fail: { txt: "คุณปะทะทัพซุ่มกลางป่าไฟ หนีออกมาได้อย่างหวุดหวิด", st: { health: -18 }, deadly: 0.1 } }
     ] },
-  { id: "h_225_south", minY: 225, maxY: 226, minAge: 18,
+  { id: "h_225_south", side: ["shu"], minY: 225, maxY: 226, minAge: 18,
     badge: "ค.ศ. 225 · ปราบภาคใต้", title: "เบ้งเฮ็กถูกจับเป็นครั้งที่สี่",
     body: "ในป่าดิบชื้นแดนใต้ ราชาเผ่าเบ้งเฮ็กถูกจับมาอีกครั้งพร้อมสบถว่าไม่ยอมแพ้ ขงเบ้งหันมาถามคุณว่าควรทำอย่างไรกับเขา",
     npc: { hero: "zhugeliang", name: "ขงเบ้ง", role: "สมุหนายกแห่งจ๊ก" },
@@ -1575,7 +1587,19 @@ const HIST_EVENTS = [
         ok: { txt: "ราชาแห่งเผ่าล้มลงกับพื้นแล้วหัวเราะ “เจ้าแข็งแกร่งจริง ข้ายอม”", st: { martial: 6, charisma: 5 }, deed: "ดวลชนะราชาเบ้งเฮ็กแห่งแดนใต้" },
         fail: { txt: "เบ้งเฮ็กเหวี่ยงคุณกระเด็นไปชนต้นไม้ แล้วหนีกลับป่าไปอีกรอบ", st: { health: -12 } } }
     ] },
-  { id: "h_228_jieting", minY: 227, maxY: 230, minAge: 16,
+  { id: "h_228_jieting_wei", side: ["wei"], minY: 227, maxY: 230, minAge: 16,
+    badge: "ค.ศ. 228 · เกเต๋ง", title: "ศัตรูตั้งค่ายบนยอดเขาไร้น้ำ",
+    body: "ทัพวุยของเตียวคับมาถึงเกเต๋ง พบว่าม้าเจ๊กแม่ทัพจ๊กตั้งค่ายบนยอดเขาโดดเดี่ยว ไม่มีทางน้ำ เตียวคับหันมาถามคุณว่าจะตีอย่างไร",
+    npc: { name: "เตียวคับ", role: "แม่ทัพวุยผู้ช่ำชอง", seed: 31, gender: "M", type: "general" },
+    choices: [
+      { t: "ล้อมตีนเขา ตัดทางน้ำ รอให้ข้าศึกกระหายจนแตกเอง", h: "วัดนำทัพ+กลยุทธ์", chk: { st: ["command", "strategy"], dc: 92 },
+        ok: { txt: "สามวันต่อมาค่ายบนเขาแตกโดยแทบไม่ต้องรบ ขงเบ้งต้องถอยทัพทั้งหมดกลับฮันต๋ง", st: { command: 6, strategy: 6 }, rank: 1, deed: "ตัดทางน้ำตีแตกค่ายเกเต๋ง" },
+        fail: { txt: "ค่ายปีกกาตีนเขาของอองเป๋งตีกลองลวง คุณไม่กล้าไล่ตาม เสียโอกาสใหญ่ไป", st: { command: 2 } } },
+      { t: "นำทหารม้าบุกขึ้นเขาตรง ๆ", h: "วัดวรยุทธ์ เสี่ยง", chk: { st: ["martial"], dc: 66 },
+        ok: { txt: "คุณบุกถึงยอดเขาก่อนใคร ธงวุยปักบนค่ายข้าศึก", st: { martial: 6 }, rank: 1 },
+        fail: { txt: "ข้าศึกกลิ้งซุงลงมาจากยอดเขา คุณบาดเจ็บสาหัส", st: { health: -16 }, deadly: 0.07 } }
+    ] },
+  { id: "h_228_jieting", side: ["shu"], minY: 227, maxY: 230, minAge: 16,
     badge: "ค.ศ. 228 · เกเต๋ง", title: "ค่ายบนยอดเขาไร้ทางน้ำ",
     body: "ม้าเจ๊กอ้างตำราดื้อรั้นตั้งค่ายบนยอดเขาโดดเดี่ยว ไม่ยอมยึดทางแยกและลำน้ำตีนเขา ทหารข้าศึกเริ่มล้อมตีนเขาไว้แล้ว",
     npc: { name: "อองเป๋ง", role: "รองแม่ทัพผู้กังวล", seed: 16, gender: "M", type: "general" },
@@ -1586,7 +1610,19 @@ const HIST_EVENTS = [
       { t: "ควบม้าเร็วกลับไปแจ้งสมุหนายก", h: "ปลอดภัย",
         ok: { txt: "ข่าวด่วนของคุณช่วยให้คลังเสบียงถอนตัวกลับฮันต๋งได้ทัน", st: { politics: 5, strategy: 3 } } }
     ] },
-  { id: "h_234_wuzhang", minY: 234, maxY: 236, minAge: 16,
+  { id: "h_234_wuzhang_wei", side: ["wei"], minY: 234, maxY: 236, minAge: 16,
+    badge: "ค.ศ. 234 · เนินอู่จ้าง", title: "ข่าวลือว่าขงเบ้งสิ้นใจแล้ว",
+    body: "ทัพวุยตั้งรับที่ริมแม่น้ำอุยโหมาร้อยวัน ขงเบ้งส่งชุดสตรีมาเยาะเย้ย แต่สุมาอี้ไม่ยอมออกรบ คืนนี้ดาวสีแดงตกเหนือค่ายจ๊ก สุมาอี้ถามคุณว่าควรไล่ตามหรือไม่",
+    npc: { hero: "simayi", name: "สุมาอี้", role: "แม่ทัพใหญ่แห่งวุย" },
+    choices: [
+      { t: "ขออาสานำทัพหน้าไล่ตาม", h: "วัดวรยุทธ์+นำทัพ", chk: { st: ["martial", "command"], dc: 112 },
+        ok: { txt: "คุณไล่ตามจนเห็นรถขงเบ้ง พอรู้ว่าเป็นหุ่นไม้ ก็ยึดเสบียงที่ทิ้งไว้ได้เต็มสิบเกวียน", st: { martial: 5, command: 6 }, rank: 1, deed: "ไล่ตามทัพจ๊กหลังขงเบ้งสิ้นที่อู่จ้าง" },
+        fail: { txt: "ทัพจ๊กหันกลับมาพร้อมรถขงเบ้ง คุณตกใจถอยจนม้าล้ม กลายเป็นเรื่องตลกทั้งค่าย", st: { health: -8, charisma: -2 } } },
+      { t: "ทูลให้รอสอดแนมให้แน่ก่อน", h: "วัดกลยุทธ์", chk: { st: ["strategy"], dc: 58 },
+        ok: { txt: "สุมาอี้พยักหน้า ทัพวุยไม่เสียใครสักคน และเขาจำชื่อคุณไว้", st: { strategy: 6 }, bond: { simayi: 1 } },
+        fail: { txt: "ระหว่างรอ ทัพจ๊กถอยไปได้หมด", st: { strategy: 2 } } }
+    ] },
+  { id: "h_234_wuzhang", side: ["shu"], minY: 234, maxY: 236, minAge: 16,
     badge: "ค.ศ. 234 · เนินอู่จ้าง", title: "ดาวสีแดงร่วงหล่นเหนือค่ายหลวง",
     body: "ดาวตกสีแดงร่วงลงเหนือเนินอู่จ้าง สมุหนายกสิ้นใจในกระโจม อุยเอี๋ยนไม่ยอมถอยและชักดาบขัดแย้งกับฝ่ายเสนาธิการจนค่ายแทบแตก",
     npc: { hero: "simayi", name: "สุมาอี้", role: "แม่ทัพวุยฝั่งตรงข้าม" },
@@ -1610,7 +1646,7 @@ const HIST_EVENTS = [
         ok: { txt: "สุมาอี้มองค่ายคุณที่แห้งสนิทแล้วหัวเราะ “มีหัวคิด แต่ครั้งหน้าบอกข้าก่อน”", st: { strategy: 5 }, bond: { simayi: 1 } },
         fail: { die: "ถูกสุมาอี้สั่งประหารฐานขัดคำสั่งย้ายค่ายหน้าเมืองเซียงเป๋ง (ค.ศ. 238)", txt: "สุมาอี้ไม่เคยพูดอะไรเล่น ๆ" } }
     ] },
-  { id: "h_249_gaoping", minY: 249, maxY: 252, minAge: 16,
+  { id: "h_249_gaoping", side: ["wei"], minY: 249, maxY: 252, minAge: 16,
     badge: "ค.ศ. 249 · สุสานเกาผิง", title: "ประตูเมืองหลวงถูกปิดในเช้าวันเซ่นไหว้",
     body: "ผู้สำเร็จราชการโจซองพาฮ่องเต้ไปไหว้สุสาน สุมาอี้ที่แกล้งป่วยมาหลายปีลุกขึ้นปิดประตูเมืองและยึดคลังแสง ม้าเร็วสองฝ่ายมาถึงหน้าจวนคุณพร้อมกัน",
     npc: { hero: "simayi", name: "สุมาอี้", role: "ผู้ก่อการรัฐประหาร" },
@@ -1623,7 +1659,7 @@ const HIST_EVENTS = [
       { t: "แกล้งป่วยหนัก ปิดประตูไม่รับแขก", h: "เอาตัวรอดแบบสุมาอี้",
         ok: { txt: "คุณไอเป็นเลือดใส่ผ้าเช็ดหน้าต่อหน้าทูตทั้งสองฝ่าย รอดจากการล้างขั้วอำนาจมาได้", st: { strategy: 5, health: 2 } } }
     ] },
-  { id: "h_263_yinping", minY: 262, maxY: 264, minAge: 18,
+  { id: "h_263_yinping", side: ["shu", "wei"], minY: 262, maxY: 264, minAge: 18,
     badge: "ค.ศ. 263 · ทางเดินอิมเพ๋ง", title: "ทหารห่อผ้าห่มกลิ้งลงหน้าผา",
     body: "เตงงายนำทหารวุยเดินลัดภูเขาอิมเพ๋งเจ็ดร้อยลี้ ห่อตัวด้วยผ้าห่มแล้วกลิ้งลงหน้าผาเข้าแดนจ๊กโดยไม่มีใครคาดคิด ด่านเล็ก ๆ ที่คุณดูแลอยู่ตรงทางลงพอดี",
     npc: { hero: "dengai", name: "เตงงาย", role: "แม่ทัพวุยผู้ข้ามเขาอิมเพ๋ง" },
@@ -1646,7 +1682,7 @@ const HIST_EVENTS = [
       { t: "ปฏิเสธ แล้วพาครอบครัวหนีไปอยู่ชนบท", h: "รักษาชีวิต",
         ok: { txt: "ไม่กี่วันต่อมาเฉิงตูนองเลือด คุณกับครอบครัวปลอดภัยในหุบเขา", st: { health: 5 }, flag: "hermitish" } }
     ] },
-  { id: "h_265_jin", minY: 265, maxY: 266, minAge: 18,
+  { id: "h_265_jin", side: ["wei"], minY: 265, maxY: 266, minAge: 18,
     badge: "ค.ศ. 265 · ราชวงศ์จิ้น", title: "พิธีสละราชสมบัติครั้งที่สองในรอบห้าสิบปี",
     body: "สุมาเอี๋ยนหลานสุมาอี้บังคับฮ่องเต้วุยสละบัลลังก์เหมือนที่โจผีเคยทำกับฮั่น ราชวงศ์จิ้นถือกำเนิด ทุกคนต้องเลือกว่าจะก้มหัวหรือไม่",
     npc: { name: "สุมาเอี๋ยน", role: "ปฐมกษัตริย์ราชวงศ์จิ้น", seed: 47, gender: "M", type: "noble" },
@@ -1656,7 +1692,7 @@ const HIST_EVENTS = [
       { t: "ลาออกจากราชการ ไม่รับใช้สองราชวงศ์", h: "เกียรติยศ",
         ok: { txt: "บัณฑิตทั้งแผ่นดินยกย่องความซื่อตรงของคุณ", st: { charisma: 7 }, flag: "hermit" } }
     ] },
-  { id: "h_280_fall", minY: 278, maxY: 281, minAge: 18,
+  { id: "h_280_fall", side: ["wu"], minY: 278, maxY: 281, minAge: 18,
     badge: "ค.ศ. 280 · รวมแผ่นดิน", title: "โซ่เหล็กขวางแม่น้ำแยงซีถูกเผาขาด",
     body: "ทัพเรือจิ้นใช้แพไฟเผาโซ่เหล็กที่ง่อขึงขวางแม่น้ำ ทัพใหญ่ล้อมเมืองกิ๋นเงียบทุกทิศ ยุคสามก๊กกำลังเดินมาถึงหน้าสุดท้าย",
     npc: { name: "อองจุ๋น", role: "แม่ทัพเรือแห่งจิ้น", seed: 49, gender: "M", type: "general" },
@@ -1703,7 +1739,7 @@ const POOL_EVENTS = [
         ok: { txt: "นักพรตหักกิ่งไม้มาสอนกระบวนดาบสามท่า ซึ่งคุณใช้ไปตลอดชีวิต", st: { martial: 7 }, flag: "hasMaster" },
         fail: { txt: "คุณฟันกิ่งไม้ไม่เข้า นักพรตหัวเราะแล้วหายไปในหมอก", st: { martial: 2 } } }
     ] },
-  { id: "p_marriage", minAge: 18, maxAge: 34, weight: 3, req: s => !s.spouse,
+  { id: "p_marriage", minAge: 18, maxAge: 40, weight: 3, repeat: 4, prio: 0.12, req: s => !s.spouse,
     badge: "ครอบครัว · งานมงคล", title: "แม่สื่อมาเคาะประตูบ้าน",
     body: "แม่สื่อประจำเมืองยื่นการ์ดแดงสามใบ ทั้งลูกหลานตระกูลขุนนางที่จะช่วยเรื่องเส้นสาย คนที่คุณแอบชอบมานาน และคำแนะนำให้มุ่งงานไปก่อน",
     choices: [
@@ -3067,7 +3103,7 @@ const MID_CARDS = [
     choices: [
       { t: "พาออกรบ ให้เป็นรองแม่ทัพ", h: "ได้ขุนพลคนใหม่ (ทายาทจะเก่งขึ้น)", ok: { fn: s => { const c = s.children[s.ctx.ci]; c.grown = true; c.edu = "martial"; const l = addLieut(s, c.gender === "M" ? "บุตรชาย" : "บุตรสาว"); l.name = c.name; l.gender = c.gender; l.born = c.born; l.child = true; return `${c.name}สวมเกราะชุดแรก ยืนข้างคุณหน้ากองทัพ`; } } },
       { t: "ส่งไปเรียนกับบัณฑิตชื่อดัง (30 ตำลึง)", h: "ทายาทเก่งบุ๋น", need: s => s.gold >= 30, ok: { fn: s => { const c = s.children[s.ctx.ci]; c.grown = true; c.edu = "civil"; s.gold -= 30; return `${c.name}ออกเดินทางไปสำนักศึกษาพร้อมหีบตำรา`; } } },
-      { t: "หาคู่ครองตระกูลใหญ่ ผูกสัมพันธ์การเมือง", h: "เงิน + ชื่อเสียง + ความชอบธรรม", ok: { fn: s => { const c = s.children[s.ctx.ci]; c.grown = true; c.married = true; s.gold += 40; s.legit = clamp((s.legit || 0) + 6, 0, 100); return `งานแต่ง${c.name}ยิ่งใหญ่ ตระกูลฝ่ายคู่ครองส่งสินสอดและทหารคุ้มกันมาให้`; }, fame: 3 } }
+      { t: "หาคู่ครองตระกูลใหญ่ ผูกสัมพันธ์การเมือง", h: "เงิน + ชื่อเสียง + ความชอบธรรม", ok: { fn: s => { const c = s.children[s.ctx.ci]; c.grown = true; marryChild(s, c, "political"); s.gold += 40; s.legit = clamp((s.legit || 0) + 6, 0, 100); return `งานแต่ง${c.name}ยิ่งใหญ่ ตระกูลฝ่ายคู่ครองส่งสินสอดและทหารคุ้มกันมาให้`; }, fame: 3 } }
     ] },
 
   /* คู่ชีวิต */
@@ -3913,6 +3949,150 @@ const NEW_CARDS = [
 ];
 NEW_CARDS.forEach(e => { e.flavor = true; if (e.weight == null) e.weight = 0.8; });
 POOL_EVENTS.push(...NEW_CARDS);
+
+/* ===================================================================
+ * CARDS 6 — ครอบครัว: หาคู่ได้หลายทาง (หมู่บ้าน สงคราม การเมือง เทศกาล วัยกลางคน)
+ * และเรื่องของลูก ๆ (แต่งงานการเมือง หนีตามกัน หลาน พี่น้องแตกคอ)
+ * ลูกที่แต่งงานแล้วจะมีหลานได้ ทายาทที่เล่นต่อเริ่มพร้อมคู่ชีวิตและลูก จึงสืบสกุลได้หลายรุ่น
+ * =================================================================== */
+const partnerWord = s => s.gender === "M" ? "หญิงสาว" : "ชายหนุ่ม";
+const partnerPron = s => s.gender === "M" ? "นาง" : "เขา";
+const kidWord = c => c.gender === "M" ? "บุตรชาย" : "บุตรสาว";
+const unwedKid = (s, lo, hi) => s.children.findIndex(c => !c.married && s.year - c.born >= lo && s.year - c.born <= hi);
+const pickKid = (lo, hi) => s => { const i = unwedKid(s, lo, hi); return i < 0 ? false : { ci: i }; };
+const kidOf = s => s.children[s.ctx.ci];
+const wed = (type, txt, extra) => Object.assign({ txt, fn: s => { marry(s, type); } }, extra || {});
+
+const FAMILY_CARDS = [
+  /* ---------- หาคู่ ---------- */
+  { id: "a_m_village", req: s => s.adult && !s.spouse, minAge: 18, maxAge: 50, weight: 1.4,
+    badge: "ครอบครัว · ระหว่างทาง", title: s => `${partnerWord(s)}ที่บ่อน้ำหน้าหมู่บ้าน`,
+    body: s => `ระหว่างเดินทางผ่านหมู่บ้านเล็ก ๆ ${partnerWord(s)}คนหนึ่งตักน้ำให้คุณดื่มแล้วยิ้มอาย ๆ ชาวบ้านกระซิบว่า${partnerPron(s)}ยังไม่ได้ออกเรือน และพ่อแม่ก็กำลังหาคู่ให้อยู่`,
+    choices: [
+      { t: "อยู่ต่ออีกหลายวัน ทำความรู้จักให้มากขึ้น", h: "วัดบารมี · อาจได้คู่ชีวิต", chk: { st: ["charisma"], dc: 40 },
+        ok: wed("love", "หนึ่งเดือนต่อมา งานแต่งเล็ก ๆ จัดขึ้นใต้ต้นไทรกลางหมู่บ้าน ทั้งหมู่บ้านมาร่วมงาน", { st: { health: 5, charisma: 2 } }),
+        fail: { txt: "ครอบครัวฝ่ายนั้นไม่อยากให้ลูกไปกับคนพเนจร คุณจากมาพร้อมความทรงจำดี ๆ", st: { charisma: 1 } } },
+      { t: "ไปสู่ขอกับพ่อแม่เลย (15 ตำลึง)", h: "ได้คู่ชีวิตแน่นอน", need: s => s.gold >= 15,
+        ok: wed("love", "พ่อแม่ฝ่ายนั้นรับสินสอดด้วยรอยยิ้ม ชีวิตคู่ของคุณเริ่มต้นที่หมู่บ้านเล็ก ๆ แห่งนี้", { st: { health: 4 }, fn: s => { s.gold -= 15; marry(s, "love"); } }) },
+      { t: "ขอบคุณแล้วเดินทางต่อ", h: "", ok: { txt: "รสน้ำเย็นจากบ่อนั้นติดอยู่ในความทรงจำไปอีกนาน", st: { strategy: 1 } } }
+    ] },
+  { id: "a_m_war_rescue", req: s => s.adult && !s.spouse && (s.troops >= 100 || isServant(s)), minAge: 18, maxAge: 48, weight: 1.2,
+    badge: "ครอบครัว · ไฟสงคราม", title: "ช่วยคนจากเมืองที่ถูกปล้น",
+    body: s => `หลังศึก ทหารแตกทัพเข้าปล้นเมือง คุณดึง${partnerWord(s)}ตระกูลขุนนางท้องถิ่นออกจากเรือนที่ไฟกำลังลุก ครอบครัวของ${partnerPron(s)}ตายหมดแล้ว ${partnerPron(s)}เกาะแขนคุณไม่ยอมปล่อย`,
+    choices: [
+      { t: "รับไว้ดูแล แล้วแต่งงานเมื่อพ้นช่วงไว้ทุกข์", h: "ได้คู่ชีวิต", ok: wed("love", "หนึ่งปีต่อมา ทั้งสองแต่งงานกันในค่ายทหาร ทหารทั้งค่ายมาดื่มอวยพร", { st: { charisma: 3 }, fame: 2 }) },
+      { t: "ส่งไปอยู่กับญาติที่เมืองอื่นพร้อมเงินค่าเดินทาง (10 ตำลึง)", h: "ชื่อเสียง +", need: s => s.gold >= 10, ok: { txt: "หลายปีต่อมาจดหมายขอบคุณมาถึงพร้อมผ้าไหมหนึ่งพับ", fame: 2, fn: s => { s.gold -= 10; } } }
+    ] },
+  { id: "a_m_lord_match", req: s => isServant(s) && !s.spouse && s.rank >= 2, minAge: 20, maxAge: 52, weight: 1.3,
+    badge: s => `ราชการ · ${fnm(s, s.lord)}`, title: "เจ้านายจะยกญาติให้แต่งงาน",
+    body: s => `${factionLeader(s.lord, s.year)}เรียกคุณเข้าพบ “เจ้ารับใช้ข้ามานาน ข้าอยากให้เจ้าเป็นคนในครอบครัว” แล้วเอ่ยชื่อญาติฝ่าย${s.gender === "M" ? "หญิง" : "ชาย"}คนหนึ่งให้คุณแต่งงานด้วย`,
+    choices: [
+      { t: "รับด้วยความยินดี", h: "เจ้านายไว้ใจ · ผลงาน +", ok: wed("political", "งานแต่งจัดในจวนเจ้านาย ขุนนางทั้งราชสำนักมาร่วมงาน ต่อจากนี้คุณคือคนในครอบครัว", { st: { politics: 4 }, fame: 3, fn: s => { marry(s, "political"); s.merit = (s.merit || 0) + 3; } }) },
+      { t: "ทูลปฏิเสธอย่างนอบน้อม ขอเลือกคู่เอง", h: "วัดบารมี · เสี่ยงเจ้านายขุ่นเคือง", chk: { st: ["charisma"], dc: 58 },
+        ok: { txt: "เจ้านายหัวเราะ “ใจเด็ดดี” แล้วไม่ถือสา", st: { charisma: 3 } },
+        fail: { txt: "เจ้านายหน้าบึ้ง ทั้งราชสำนักรู้ว่าคุณเสียหน้าเขา", fame: -2, fn: s => { s.merit = Math.max(0, (s.merit || 0) - 3); } } }
+    ] },
+  { id: "a_m_alliance", req: s => isRuler(s) && !s.spouse, minAge: 20, maxAge: 60, weight: 1.6,
+    badge: s => `${W.playerName} · การทูต`, title: "แคว้นข้างเคียงขอผูกดองด้วยการแต่งงาน",
+    body: s => `ทูตจากแคว้นข้างเคียงนำของกำนัลเต็มสิบเกวียน ขอให้คุณแต่งงานกับ${s.gender === "M" ? "ธิดา" : "บุตรชาย"}ของเจ้าแคว้นเพื่อผูกไมตรี ขุนนางครึ่งหนึ่งเห็นด้วย อีกครึ่งกลัวถูกครอบงำ`,
+    choices: [
+      { t: "ตกลงแต่งงานผูกไมตรี", h: "ความชอบธรรม + ทหารขวัญดี", ok: wed("political", "งานอภิเษกยิ่งใหญ่ทั้งสองแคว้น ชายแดนสงบไปหลายปี", { fame: 3, fn: s => { marry(s, "political"); s.legit = clamp((s.legit || 0) + 8, 0, 100); s.morale = clamp(s.morale + 6, 5, 100); s.gold += 30; } }) },
+      { t: "รับของกำนัล แต่ขอเลื่อนงานแต่งออกไป", h: "วัดกลยุทธ์", chk: { st: ["strategy"], dc: 55 },
+        ok: { txt: "ทูตกลับไปพร้อมคำสัญญาลอย ๆ คุณได้ของกำนัลโดยไม่ต้องผูกมัดอะไร", fn: s => { s.gold += 30; }, st: { strategy: 3 } },
+        fail: { txt: "เจ้าแคว้นข้างเคียงรู้ทันว่าถูกหลอก ความสัมพันธ์ตึงเครียดขึ้น", fame: -2 } },
+      { t: "ปฏิเสธ แคว้นเราไม่ต้องพึ่งใคร", h: "", ok: { txt: "ทูตกลับไปพร้อมสีหน้าบึ้งตึง", st: { command: 2 } } }
+    ] },
+  { id: "a_m_festival", req: s => s.adult && !s.spouse, minAge: 17, maxAge: 32, weight: 1.2,
+    badge: "ครอบครัว · เทศกาล", title: "ลูกช่วงตกลงมาในมือคุณ",
+    body: s => `งานโยนลูกช่วงเลือกคู่ของตระกูลพ่อค้าใหญ่ ฝูงชนแย่งกันจนวุ่นวาย แต่ลูกช่วงแพรแดงกลับตกลงมาในมือคุณพอดี ${partnerWord(s)}บนหอสูงมองลงมาแล้วหน้าแดง`,
+    choices: [
+      { t: "รับคำตามธรรมเนียม ขึ้นหอไปทำความรู้จัก", h: "ได้คู่ชีวิต + เงิน", ok: wed("love", "ตระกูลพ่อค้าจัดงานแต่งให้สามวันสามคืน พร้อมสินเดิมก้อนใหญ่", { fn: s => { marry(s, "love"); s.gold += 25; }, st: { charisma: 2 } }) },
+      { t: "โยนลูกช่วงคืนกลางฝูงชน", h: "", ok: { txt: "ฝูงชนหัวเราะลั่น ชายหนุ่มอีกคนรับลูกช่วงไปด้วยความดีใจ", st: { charisma: 1 } } }
+    ] },
+  { id: "a_m_midlife", req: s => s.adult && !s.spouse, minAge: 35, maxAge: 62, weight: 1.5,
+    badge: "ครอบครัว · ชีวิตครึ่งหลัง", title: "เพื่อนเก่าชวนให้มีคู่ชีวิตเสียที",
+    body: s => `เพื่อนเก่าแนะนำ${s.gender === "M" ? "หญิงม่าย" : "พ่อม่าย"}ผู้ใจดีคนหนึ่งให้รู้จัก “อายุเท่านี้แล้ว อย่าอยู่คนเดียวเลย บ้านจะได้มีเสียงหัวเราะบ้าง”`,
+    choices: [
+      { t: "ตกลงพบกัน แล้วแต่งงาน", h: "ได้คู่ชีวิต · สุขภาพดีขึ้น", ok: wed("love", "ชีวิตครึ่งหลังของคุณมีคนรอกินข้าวด้วยทุกเย็น", { st: { health: 6, charisma: 2 } }) },
+      { t: "ขออยู่ตัวคนเดียวต่อไป", h: "", ok: { txt: "เพื่อนส่ายหน้า แต่ก็ยังแวะมาดื่มชาด้วยทุกเดือน", st: { strategy: 1 } } }
+    ] },
+  { id: "a_m_captive", req: s => s.adult && !s.spouse && (isRuler(s) || (isServant(s) && s.rank >= 3)), minAge: 20, maxAge: 55, weight: 1,
+    badge: "ครอบครัว · หลังศึก", title: "เชลยตระกูลใหญ่จากเมืองที่ยึดได้",
+    body: s => `หลังยึดเมืองได้ ทหารคุม${s.gender === "M" ? "ธิดา" : "บุตรชาย"}ของเจ้าเมืองเดิมมาหาคุณ ขุนนางท้องถิ่นแนะนำว่าถ้าแต่งงานด้วย ชาวเมืองจะยอมรับการปกครองของคุณ`,
+    choices: [
+      { t: "แต่งงานอย่างให้เกียรติ ผูกใจชาวเมือง", h: "ความสงบ +", ok: wed("political", "ชาวเมืองเห็นว่าคุณไม่ได้มาเพื่อปล้น ความวุ่นวายสงบลงในไม่กี่เดือน", { fn: s => { marry(s, "political"); citiesOf("player").forEach(c => { c.order = clamp(c.order + 5, 0, 100); }); }, fame: 2 }) },
+      { t: "ปล่อยตัวกลับไปหาญาติ", h: "ชื่อเสียง +", ok: { txt: "ข่าวความใจกว้างของคุณแพร่ไปทั่ว", fame: 3, st: { charisma: 2 } } }
+    ] },
+
+  /* ---------- เรื่องของลูก ๆ ---------- */
+  { id: "a_k_match", req: s => s.adult && unwedKid(s, 17, 32) >= 0, minAge: 34, weight: 1.6, repeat: 2, noCap: true,
+    setup: pickKid(17, 32),
+    badge: "ครอบครัว · ลูกถึงวัยออกเรือน", title: s => `${kidOf(s).name}ถึงวัยออกเรือนแล้ว`,
+    body: s => { const c = kidOf(s); return `${kidWord(c)}${c.name}อายุ ${s.year - c.born} ปีแล้ว แม่สื่อมาเสนอคู่ทั้งตระกูลขุนนางที่จะช่วยเรื่องการเมือง และคนที่${c.gender === "M" ? "เขา" : "นาง"}แอบรักอยู่ในเมือง`; },
+    choices: [
+      { t: "แต่งงานการเมืองกับตระกูลขุนนางใหญ่", h: "เงิน + ความชอบธรรม · ลูกอาจไม่มีความสุข", ok: { fame: 2, fn: s => { const c = kidOf(s); const m = marryChild(s, c, "political"); s.gold += 30; s.legit = clamp((s.legit || 0) + 5, 0, 100); if (s.lord) s.merit = (s.merit || 0) + 2; return `${c.name}แต่งงานกับ${m.name}จากตระกูลขุนนางใหญ่ สินสอดและเส้นสายไหลเข้าบ้าน`; } } },
+      { t: "ให้แต่งกับคนที่รัก", h: "ลูกมีความสุข · สุขภาพคุณดีขึ้น", ok: { st: { health: 3, charisma: 2 }, fn: s => { const c = kidOf(s); const m = marryChild(s, c, "love"); return `${c.name}แต่งงานกับ${m.name} งานเล็กแต่เต็มไปด้วยเสียงหัวเราะ`; } } },
+      { t: "ยังไม่ให้แต่ง ให้ทุ่มเทกับงานก่อน", h: "", ok: { txt: "ลูกเม้มปาก แต่ก็ไม่เถียง", st: { command: 1 } } }
+    ] },
+  { id: "a_k_elope", req: s => s.adult && unwedKid(s, 16, 28) >= 0, minAge: 34, weight: 0.8,
+    setup: pickKid(16, 28),
+    badge: "ครอบครัว · เรื่องวุ่นในบ้าน", title: s => `${kidOf(s).name}หนีตามคนรักไปกลางดึก`,
+    body: s => { const c = kidOf(s); return `เช้านี้ห้องของ${c.name}ว่างเปล่า มีจดหมายวางไว้บนโต๊ะ “ลูกขอโทษ แต่ลูกจะไม่แต่งกับคนที่ไม่ได้รัก” คนในเมืองเห็นว่ามุ่งหน้าไปทางท่าเรือ`; },
+    choices: [
+      { t: "ตามไปพากลับ แล้วจัดงานแต่งให้เสียเลย", h: "ลูกได้แต่งงาน · เสียหน้าเล็กน้อย", ok: { fame: -1, st: { charisma: 3 }, fn: s => { const c = kidOf(s); marryChild(s, c, "love"); return `คุณเจอทั้งคู่ที่ท่าเรือ แทนที่จะลงโทษ คุณกลับจัดงานแต่งให้ในเดือนนั้นเอง`; } } },
+      { t: "ตัดขาด ไม่นับเป็นลูกอีกต่อไป", h: "ลูกคนนี้จะหายไปจากตระกูล", ok: { st: { command: 2, health: -4 }, fn: s => { const c = kidOf(s); s.children.splice(s.ctx.ci, 1); return `ชื่อ${c.name}ถูกลบออกจากบัญชีตระกูล คุณไม่เคยเอ่ยถึงอีกเลย`; } } },
+      { t: "ปล่อยไป ขอแค่ให้มีความสุข", h: "", ok: { st: { health: 2 }, fn: s => { const c = kidOf(s); marryChild(s, c, "love"); c.away = true; return `หลายปีต่อมาจดหมายจาก${c.name}มาถึง เล่าว่าใช้ชีวิตอย่างมีความสุขอยู่เมืองริมน้ำ`; } } }
+    ] },
+  { id: "a_k_peace_bride", req: s => isRuler(s) && unwedKid(s, 16, 30) >= 0, weight: 1.2,
+    setup: pickKid(16, 30),
+    badge: s => `${W.playerName} · การทูต`, title: s => `ศัตรูขอ${kidOf(s).name}ไปแต่งงานเพื่อสงบศึก`,
+    body: s => { const c = kidOf(s); return `แคว้นศัตรูที่รบกันมาหลายปีเสนอสงบศึก แลกกับให้${c.name}ไปแต่งงานกับ${c.gender === "M" ? "ธิดา" : "บุตรชาย"}ของเจ้าแคว้น ขุนนางรู้ดีว่าอีกนัยหนึ่งคือการส่งลูกไปเป็นตัวประกัน`; },
+    choices: [
+      { t: "ยอมส่งลูกไป แลกกับสันติภาพ", h: "ขวัญทัพ + เสบียง + ความชอบธรรม", ok: { fame: 2, fn: s => { const c = kidOf(s); marryChild(s, c, "political"); c.away = true; s.morale = clamp(s.morale + 8, 5, 100); s.food += 15; s.legit = clamp((s.legit || 0) + 6, 0, 100); return `${c.name}ขึ้นเกวียนเจ้าสาวไปพร้อมน้ำตา ชายแดนสงบลงหลายปี`; } } },
+      { t: "ส่งลูกบุญธรรมไปแทน", h: "วัดกลยุทธ์ · ถ้าถูกจับได้จะเกิดสงคราม", chk: { st: ["strategy"], dc: 60 },
+        ok: { txt: "แคว้นศัตรูไม่รู้ความจริง สันติภาพเกิดขึ้นโดยที่ลูกคุณยังอยู่ข้างกาย", fn: s => { s.morale = clamp(s.morale + 6, 5, 100); }, st: { strategy: 3 } },
+        fail: { txt: "ความลับรั่ว แคว้นศัตรูประกาศสงครามทันที", fame: -3, fn: s => { s.morale = clamp(s.morale - 8, 5, 100); } } },
+      { t: "ปฏิเสธ จะไม่เอาลูกไปแลก", h: "", ok: { txt: "การรบดำเนินต่อไป แต่ลูกของคุณมองคุณด้วยแววตาขอบคุณ", st: { charisma: 2 } } }
+    ] },
+  { id: "a_k_grandchild", req: s => s.adult && s.children.some(c => c.kids && c.kids.length), minAge: 40,
+    badge: "ครอบครัว · หลาน", title: "อุ้มหลานคนแรก",
+    body: s => { const c = s.children.find(c => c.kids && c.kids.length); return `${c.name}พา${c.kids[0].name}หลานคนแรกมาให้คุณอุ้ม เด็กน้อยคว้าเคราหรือปิ่นปักผมของคุณไว้แน่นแล้วหัวเราะเสียงใส`; },
+    choices: [
+      { t: "อุ้มหลานไปเดินเล่นในสวนทั้งบ่าย", h: "สุขภาพ +", ok: { txt: "บ่ายนั้นคุณลืมเรื่องสงครามไปหมดสิ้น", st: { health: 6, charisma: 2 } } },
+      { t: "มอบหยกประจำตระกูลให้หลาน", h: "ตระกูลเหนียวแน่น", ok: { txt: "ทั้งบ้านรู้ว่าสายเลือดของตระกูลจะไม่ขาดหาย", st: { charisma: 3 }, fame: 1 } }
+    ] },
+  { id: "a_k_rivalry", req: s => s.adult && s.children.filter(c => s.year - c.born >= 18).length >= 2, minAge: 45, weight: 1.1,
+    badge: "ครอบครัว · พี่น้อง", title: "ลูกสองคนทะเลาะกันกลางงานเลี้ยง",
+    body: s => { const k = s.children.filter(c => s.year - c.born >= 18); return `${k[0].name}กับ${k[1].name}ทะเลาะกันเรื่องใครจะได้สืบทอดตระกูล จนเกือบชักดาบใส่กันต่อหน้าแขกเหรื่อ ทั้งบ้านเงียบกริบรอดูว่าคุณจะทำอย่างไร`; },
+    choices: [
+      { t: "ประกาศให้ลูกคนโตเป็นผู้สืบทอด", tf: s => `ประกาศให้${s.children[0].name}ลูกคนโตเป็นผู้สืบทอด`, h: "ลดโอกาสพี่น้องฆ่ากันภายหลัง", ok: { txt: "ลูกคนเล็กก้มหน้ารับ บ้านสงบลง แต่บางอย่างในแววตาไม่เหมือนเดิม", flag: "heirNamed", st: { command: 2 } } },
+      { t: "ให้ทั้งสองไปทำงานคนละเมือง", h: "วัดปกครอง", chk: { st: ["politics"], dc: 50 },
+        ok: { txt: "ห่างกันแล้ว ทั้งสองกลับคิดถึงกัน และเขียนจดหมายหากันทุกเดือน", flag: "heirNamed", st: { politics: 3 } },
+        fail: { txt: "ต่างคนต่างสร้างฐานอำนาจของตัวเองในเมืองที่ดูแล", st: { politics: 1 } } },
+      { t: "ปล่อยให้แข่งกันเอง คนเก่งกว่าจะชนะ", h: "", ok: { txt: "การแข่งขันทำให้ทั้งสองเก่งขึ้น และเกลียดกันมากขึ้น", st: { strategy: 2 } } }
+    ] },
+  { id: "a_k_daughter_general", req: s => s.adult && s.children.some(c => c.gender === "F" && !c.grown && s.year - c.born >= 15 && s.year - c.born <= 24), weight: 1,
+    setup: s => { const i = s.children.findIndex(c => c.gender === "F" && !c.grown && s.year - c.born >= 15 && s.year - c.born <= 24); return i < 0 ? false : { ci: i }; },
+    badge: "ครอบครัว · บุตรสาว", title: s => `${kidOf(s).name}แอบฝึกทวนหลังบ้าน`,
+    body: s => `คุณเห็น${kidOf(s).name}แอบฝึกทวนหลังบ้านทุกเช้าตรู่ ฝีมือไม่ธรรมดาเลย นางคุกเข่าขอให้คุณยอมให้ไปเป็นแม่ทัพ แทนที่จะรอแต่งงาน`,
+    choices: [
+      { t: "ยอม และสอนวิชาทั้งหมดให้เอง", h: "ทายาทสายบู๊", ok: { st: { martial: 2, charisma: 2 }, fn: s => { const c = kidOf(s); c.grown = true; c.edu = "martial"; return `${c.name}สวมเกราะชุดแรกแล้วยิ้มกว้างที่สุดเท่าที่คุณเคยเห็น`; } } },
+      { t: "ห้ามเด็ดขาด ให้เรียนการบ้านการเรือน", h: "", ok: { txt: "นางเชื่อฟัง แต่เสียงทวนหลังบ้านยังดังทุกเช้า", st: { command: 1 } } }
+    ] },
+  { id: "a_k_inlaw", req: s => s.adult && s.children.some(c => c.married && c.married.type === "political"), minAge: 40, weight: 0.9,
+    badge: "ครอบครัว · ดองการเมือง", title: "ตระกูลดองขอให้ช่วยเรื่องคดีความ",
+    body: s => { const c = s.children.find(c => c.married && c.married.type === "political"); return `พ่อของ${c.married.name}คู่ครองของ${c.name}ถูกกล่าวหาว่าโกงภาษี เขามาขอให้คุณใช้อิทธิพลช่วยปิดคดี “เราเป็นครอบครัวเดียวกันแล้วนะ”`; },
+    choices: [
+      { t: "ช่วยเจรจาให้ลดโทษตามกฎหมาย", h: "วัดปกครอง", chk: { st: ["politics"], dc: 52 },
+        ok: { txt: "ตระกูลดองได้รับโทษเบาลงโดยที่คุณไม่ต้องทำผิดกฎหมาย ทั้งสองบ้านยังดีกันเหมือนเดิม", st: { politics: 4 } },
+        fail: { txt: "ศาลไม่ลดโทษ ตระกูลดองโกรธว่าคุณไม่ช่วยเต็มที่", st: { politics: 1 } } },
+      { t: "ใช้อำนาจปิดคดีให้", h: "ได้ใจตระกูลดอง · เสียชื่อ", ok: { txt: "คดีเงียบหายไป ตระกูลดองส่งของขวัญมาขอบคุณ แต่ข่าวลือแพร่ไปทั่วเมือง", fame: -3, fn: s => { s.gold += 20; } } },
+      { t: "ปฏิเสธ ปล่อยให้เป็นไปตามกฎหมาย", h: "ชื่อเสียง +", ok: { txt: "ราษฎรยกย่องความเที่ยงธรรม แต่งานเลี้ยงของสองตระกูลเงียบไปหลายปี", fame: 3 } }
+    ] }
+];
+/* การ์ดครอบครัวไม่นับรวมในโควตาการ์ดเล่าเรื่อง จึงไม่ไปแย่งจังหวะการ์ดเลื่อนยศ/ขยายแคว้น */
+FAMILY_CARDS.forEach(e => { e.flavor = true; e.family = true; });
+POOL_EVENTS.push(...FAMILY_CARDS);
 
 /* ===================================================================
  * SYSTEMS — ชื่อเสียง, เกียรติยศตระกูล, ทรัพยากรแต่ละสาย, คำสั่งประจำช่วง
@@ -4851,7 +5031,10 @@ function newCharacter(opt) {
   if (play) s.fame = 10;
   if (desc) equipRelic(s, desc.relic); else if (play && play.relic) equipRelic(s, play.relic); else if (cls.giftRelic) equipRelic(s, rpick(RELICS.filter(r => r.id !== "w3" && r.id !== "t5" && r.id !== "w6")).id);
   if (heir && heir.arsenal) heir.arsenal.forEach(id => equipRelic(s, id)); else if (heir && heir.weaponId) equipRelic(s, heir.weaponId);
+  if (heir) { applyLegacy(s, heir.inherit); heirFamily(s, heir); }
   if (s.age >= 16) comeOfAge(s);
+  if (heir && typeof syncFaction === "function") syncFaction(s);
+  if (heir && s.flags.emperor && citiesOf("player").length) { s.rank = 7; s.peakRank = Math.max(s.peakRank, 7); }
   meta.lives = meta.lives; saveMeta();
   addLog(s, heir ? `${s.name} รับมรดกสืบสกุล${s.surname} รุ่นที่ ${s.dynasty.gen} ในวัย ${s.age} ปี` : play ? `${s.name} ลืมตาดูโลก ณ ${s.city} ชะตาวีรบุรุษกลับมาอีกครั้ง` : `ลืมตาดูโลก ณ ${s.city} ในฐานะ${s.className}`, true);
   return s;
@@ -4873,8 +5056,36 @@ function marry(s, type) {
   const g = s.gender === "M" ? "F" : "M";
   s.spouse = { type, name: rpick(SURNAMES) + rpick(g === "M" ? MALE_NAMES : FEMALE_NAMES), gender: g, since: s.year };
 }
+/* ลูกออกเรือน: เก็บชื่อคู่ครองไว้ ทายาทที่เล่นต่อจะเริ่มพร้อมคู่ชีวิตคนนี้ */
+function marryChild(s, c, type, name) {
+  const g = c.gender === "M" ? "F" : "M";
+  c.grown = true;
+  c.married = { type: type || "love", name: name || rpick(SURNAMES) + rpick(g === "M" ? MALE_NAMES : FEMALE_NAMES), since: s.year };
+  return c.married;
+}
+/* ลูกที่แต่งงานแล้วมีหลานได้ (ใช้ตอนทายาทเล่นต่อ จะได้มีลูกพร้อมสืบสกุลรุ่นถัดไป) */
+function grandchildTick(s) {
+  s.children.forEach(c => {
+    if (!c.married) return;
+    const age = s.year - c.born; c.kids = c.kids || [];
+    if (age < 19 || age > 46 || c.kids.length >= 3 || R() > 0.22) return;
+    const g = R() < 0.5 ? "M" : "F";
+    const k = { name: s.surname + rpick(g === "M" ? MALE_NAMES : FEMALE_NAMES), gender: g, born: s.year };
+    c.kids.push(k);
+    addLog(s, `${c.name}มีบุตร${g === "M" ? "ชาย" : "สาว"}ชื่อ ${k.name} — หลาน${c.kids.length > 1 ? "อีกคน" : "คนแรก"}ของคุณ`, false);
+  });
+}
+/* ทายาทเริ่มเล่นพร้อมคู่ชีวิตและลูกที่มีอยู่แล้ว */
+function heirFamily(s, heir) {
+  const m = heir.married;
+  if (m) {
+    const g = s.gender === "M" ? "F" : "M";
+    s.spouse = typeof m === "object" ? { type: m.type || "love", name: m.name, gender: g, since: m.since || s.year } : { type: "political", name: rpick(SURNAMES) + rpick(g === "M" ? MALE_NAMES : FEMALE_NAMES), gender: g, since: s.year - 3 };
+  }
+  s.children = (heir.kids || []).map(k => Object.assign({}, k));
+}
 function maybeChild(s) {
-  if (!s.spouse || s.age < 19 || s.age > 46 || s.children.length >= 4) return;
+  if (!s.spouse || s.age < 19 || s.age > (s.gender === "M" ? 58 : 46) || s.children.length >= 4) return;
   if (R() < 0.3) {
     const g = R() < 0.5 ? "M" : "F";
     const c = { name: s.surname + rpick(g === "M" ? MALE_NAMES : FEMALE_NAMES), gender: g, born: s.year - rint(2) };
@@ -4902,14 +5113,23 @@ const CORE_REPEAT = {
   a_l_govern: 1, a_l_court_debate: 1, a_f_bandit_camp: 1, a_f_village_guard: 1
 };
 
+/* ฝ่ายที่ตัวละครสังกัดอยู่ตอนนี้ ใช้กรองการ์ดประวัติศาสตร์ที่เขียนจากในทัพก๊กใดก๊กหนึ่ง */
+const LORD_SIDE = { cc: "wei", jin: "wei", lb: "shu", sun: "wu" };
+function sideKey(s) {
+  if (s.lord) return LORD_SIDE[s.lord] || "other";
+  if (typeof citiesOf === "function" && citiesOf("player").length) return "own";
+  return "free";
+}
+/* คนไร้สังกัดเข้าร่วมทัพไหนก็ได้ (อาสาสมัคร) แต่คนที่รับใช้ก๊กอื่นหรือครองแคว้นเองจะไม่เจอการ์ดจากในทัพก๊กอื่น */
+function sideOk(ev, s) { if (!ev.side) return true; const k = sideKey(s); return k === "free" || ev.side.includes(k); }
 function pickEvent(s, prevYear) {
   for (const ev of HIST_EVENTS) {
     if (s.used[ev.id]) continue;
-    if (s.year >= ev.minY && prevYear <= ev.maxY && s.age >= (ev.minAge || 0) && (!ev.req || ev.req(s))) return ev;
+    if (s.year >= ev.minY && prevYear <= ev.maxY && s.age >= (ev.minAge || 0) && sideOk(ev, s) && (!ev.req || ev.req(s))) return ev;
   }
   const okPool = ev => {
       if (ev.chainOnly || s.used[ev.id] || MAP_DISABLED[ev.id]) return false;
-      if ((ev.repeat || ev.once === false) && !CORE_REPEAT[ev.id] && ((s.seen || {})[ev.id] || 0) >= REPEAT_CAP) return false;
+      if ((ev.repeat || ev.once === false) && !CORE_REPEAT[ev.id] && !ev.noCap && ((s.seen || {})[ev.id] || 0) >= REPEAT_CAP) return false;
       if (NEED_POST[ev.id] && !hasPost(s)) return false;
       if (ev.repeat && (s.cd[ev.id] || 0) > s.year + (s.half || 0) / 2) return false;
       if (ev.once === false && s.cd[ev.id] > s.year) return false;
@@ -4934,7 +5154,7 @@ function pickEvent(s, prevYear) {
       /* การ์ดเล่าเรื่องชุดใหม่ (e.flavor) แข่งกันเฉพาะในโควตาการ์ดเล่าเรื่องเดิม
        * การ์ดกลไกหลักจึงออกบ่อยเท่าเดิม ไม่ถูกการ์ดใหม่เบียดจังหวะเลื่อนยศ/ขยายแคว้น */
       let wc = 0, wo = 0, wn = 0;
-      el.forEach(e => { const v = wOf(e); if (CORE_REPEAT[e.id]) wc += v; else if (e.flavor) wn += v; else wo += v; });
+      el.forEach(e => { const v = wOf(e); if (CORE_REPEAT[e.id]) wc += v; else if (e.family) return; else if (e.flavor) wn += v; else wo += v; });
       if (wc > 0 && wn > 0) {
         const pCore = wc / (wc + flavorShare(s) * (wo + wn));
         el = R() < pCore ? el.filter(e => CORE_REPEAT[e.id]) : el.filter(e => !CORE_REPEAT[e.id]);
@@ -4983,7 +5203,7 @@ function step(s) {
     if (s.flags.retired) hd += 1;
     d = addStats(s, { [g]: s.adult ? (R() < 0.5 ? 1 : 0) : 2, health: Math.round(hd * years) });
     if (s.age < 40 && s.stats.health < 50) addStats(s, { health: 2 });
-    for (let i = 0; i < years; i++) if (R() < 0.45) maybeChild(s);
+    for (let i = 0; i < years; i++) { if (R() < 0.45) maybeChild(s); grandchildTick(s); }
     sysYear(s, prev);
     if (!s.alive) return "dead";
   }
@@ -5194,9 +5414,43 @@ function heirInfo(s, result) {
     surname: s.surname, given: c.name.slice(s.surname.length), gender: c.gender, born: c.born, startYear,
     classId: pr >= 6 ? 5 : pr >= 4 ? 4 : pr >= 2 ? 3 : 2, faction: s.faction, city: s.city, edu: c.edu,
     weaponId: s.weapon ? s.weapon.id : null, arsenal: (s.arsenal || []).slice(),
-    fame: s.fame,
-    dynasty: { gen: result.dyn.gen + 1, total: result.dyn.total, founder: result.dyn.founder, parentRank: pr, network: s.network }
+    fame: s.fame, married: c.married || null, kids: c.kids || [],
+    dynasty: { gen: result.dyn.gen + 1, total: result.dyn.total, founder: result.dyn.founder, parentRank: pr, network: s.network },
+    inherit: heirLegacy(s, c)
   };
+}
+/* มรดกที่ทายาทรับช่วง: เมือง ทหาร เสบียง เงินครึ่งหนึ่ง ขุนพลที่ยังอยู่ และนายเดิม */
+function heirLegacy(s, c) {
+  const own = typeof citiesOf === "function" ? citiesOf("player") : [];
+  return {
+    cities: own.map(x => ({ id: x.id, pop: x.pop, troops: x.troops, food: x.food, order: x.order, wall: x.wall, gov: x.gov })),
+    playerName: W.playerName, lord: s.lord || null, loc: s.loc,
+    troops: s.troops || 0, food: s.food || 0, morale: s.morale || 55, gold: Math.round((s.gold || 0) * 0.5),
+    lieut: (s.lieut || []).filter(l => l.alive && l.name !== c.name).map(l => Object.assign({}, l)),
+    legit: s.legit || 0, emperor: !!s.flags.emperor, founded: !!s.flags.foundedFaction
+  };
+}
+/* ศึกชิงบัลลังก์ก่อนทายาทขึ้นครอง: เสียหัวเมืองราวหนึ่งในสาม ทหารและขวัญลดลง */
+function scarLegacy(inh, roll) {
+  if (!inh) return;
+  const keep = Math.max(1, Math.ceil(inh.cities.length * 2 / 3));
+  inh.lostCities = inh.cities.slice(keep).map(c => c.id);
+  inh.cities = inh.cities.slice(0, keep);
+  inh.troops = Math.round(inh.troops * 0.6); inh.morale = Math.max(20, inh.morale - 15);
+  inh.lieut = inh.lieut.filter((l, i) => roll(i) > 0.35);
+}
+function applyLegacy(s, inh) {
+  if (!inh) return;
+  inh.cities.forEach(x => { const c = W.cities[x.id]; if (c) Object.assign(c, x, { owner: "player", touched: true }); });
+  (inh.lostCities || []).forEach(id => { const c = W.cities[id]; if (c && c.owner === "player") c.owner = "none"; });
+  if (inh.cities.length) {
+    W.playerName = inh.playerName || W.playerName;
+    s.loc = inh.cities.some(x => x.id === inh.loc) ? inh.loc : inh.cities[0].id;
+    if (inh.emperor) s.flags.emperor = true;
+    if (inh.founded) s.flags.foundedFaction = true;
+  } else if (inh.lord) s.lord = inh.lord;
+  s.troops = inh.troops; s.food = Math.max(s.food, inh.food); s.morale = inh.morale; s.gold += inh.gold;
+  s.lieut = inh.lieut; s.legit = Math.round(inh.legit * 0.8);
 }
 
 /* ---------------- ความสำเร็จ 50 อย่าง ---------------- */
@@ -5665,7 +5919,7 @@ function kidsEpilogue(s, heir) {
     else if (bad > good) { verdict = `ตระกูล${s.surname}ตกต่ำลงหลังสิ้น${s.name} สิ่งที่สร้างไว้ค่อย ๆ หายไปกับกาลเวลา`; vtone = "bad"; }
     else { verdict = `ลูก ๆ ของ${s.name}แยกย้ายกันไปตามทางของตัวเอง มีทั้งคนที่รุ่งและคนที่ร่วง เหมือนทุกครอบครัวในกลียุค`; vtone = "mid"; }
   }
-  return { verdict, tone: vtone, items: items.map(it => ({ name: it.c.name, rel: it.rel, age: it.age, text: it.text, tone: it.tone })) };
+  return { war: !!war, verdict, tone: vtone, items: items.map(it => ({ name: it.c.name, rel: it.rel, age: it.age, text: it.text, tone: it.tone })) };
 }
 
 /* ===================================================================
@@ -6205,6 +6459,7 @@ function endLife() {
   $("endAch").innerHTML = (r.tierUp ? `<div class="ach-new" style="border-color:var(--red)"><b style="color:var(--red)">ตระกูลเลื่อนขั้นเกียรติยศเป็นขั้น ${r.tierUp} · ${GLORY_TIERS[r.tierUp].name}</b><div style="font-size:13.5px;margin-top:4px">ปลดล็อก: ${GLORY_TIERS[r.tierUp].unlock}</div></div>` : "") + (r.newAch.length ? `<div class="ach-new"><b>ปลดล็อกความสำเร็จใหม่ ${r.newAch.length} อย่าง</b><div style="font-size:13.5px;margin-top:4px">${r.newAch.map(a => esc(a.name)).join(" · ")}</div></div>` : "");
   const heir = heirInfo(s, r);
   const ep = kidsEpilogue(s, heir);
+  if (heir && ep.war) scarLegacy(heir.inherit, i => hashStr((s.seed || 0) + "|scar|" + i) % 1000 / 1000);
   $("endKids").innerHTML = `<div class="sec-h" style="margin-top:18px">ชะตารุ่นลูก</div><p class="kids-v ${ep.tone}">${esc(ep.verdict)}</p>` +
     (ep.items.length ? `<div class="kids">${ep.items.map(k => `<div class="kid ${k.tone}"><div class="kn"><b>${esc(k.name)}</b><span>${esc(k.rel)} · อายุ ${Math.max(0, k.age)} ปีเมื่อคุณจากไป</span></div><p>${esc(k.text)}</p></div>`).join("")}</div>` : "");
   $("btnHeir").classList.toggle("hidden", !heir);
